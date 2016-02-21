@@ -86,7 +86,7 @@
 
       <t>POLYVAL takes a field element, H, and a series of field elements X_1, ..., X_s. Its result is S_s, where S is defined by the iteration S_0 = 0; S_j = dot(S_{j-1} + X_j, H).</t>
 
-      <t>We note that POLYVAL(H, X_1, X_2, ...) is equal to ByteSwap(GHASH(H, ByteSwap(X_1), ByteSwap(X_2), ...)), where ByteSwap is a function that converts a field element to a 128-bit string, reverses the order of the bytes, and interprets the result as a field element again.</t>
+      <t>We note that POLYVAL(H, X_1, X_2, ...) is equal to ByteSwap(GHASH(x*H, ByteSwap(X_1), ByteSwap(X_2), ...)), where ByteSwap is a function that converts a field element to a 128-bit string, reverses the order of the bytes, and interprets the result as a field element again.</t>
     </section>
 
     <section title="Encryption">
@@ -96,7 +96,7 @@
 
       <t>Calculate S_s = POLYVAL(authentication_key, X_1, X_2, ...) then XOR S_s with the nonce and set the first bit to zero. Encrypt the result with AES using the AES key to produce the tag.</t>
 
-      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter is the tag with the first bit set to one and the the last 32 bits set to zero. The counter advances by incrementing the final 32 bits as an unsigned, big-endian number. The result of the encryption is the resulting ciphertext followed by the tag.</t>
+      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter is the tag with the first bit set to one and the the last 32 bits set to zero. The counter advances by incrementing the final 32 bits as an unsigned, little-endian number. The result of the encryption is the resulting ciphertext followed by the tag.</t>
     </section>
 
     <section title="Decryption">
