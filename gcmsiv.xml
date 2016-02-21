@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC5116 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5116.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<?rfc strict="yes" ?>
+<?rfc toc="yes"?>
+<?rfc tocdepth="3"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="yes" ?>
+<?rfc subcompact="no" ?>
+<rfc category="info" docName="draft-gueron-gcmsiv-01" ipr="trust200902">
+  <front>
+    <title abbrev="cfrgcurve">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
+
+    <author fullname="Shay Gueron" initials="S." surname="Gueron">
+      <organization>University of Haifa</organization>
+      <address>
+        <postal>
+          <street>Abba Khoushy Ave 199</street>
+          <city>Haifa</city>
+          <code>3498838</code>
+          <country>Israel</country>
+        </postal>
+        <email>shay.gueron@intel.com</email>
+      </address>
+    </author>
+
+    <author fullname="Yehuda Lindell" initials="Y." surname="Lindell">
+      <organization>Bar Ilan University</organization>
+      <address>
+        <postal>
+          <street>Bar Ilan University</street>
+          <city>Ramat Gan</city>
+          <code>5290002</code>
+          <country>Israel</country>
+        </postal>
+        <email>fixme@example.com</email>
+      </address>
+    </author>
+
+    <date month="February" year="2016" />
+
+    <area>General</area>
+    <workgroup>CFRG</workgroup>
+
+    <keyword>authenticated encryption</keyword>
+    <keyword>aead</keyword>
+    <keyword>aes</keyword>
+    <keyword>gcm</keyword>
+    <keyword>siv</keyword>
+
+    <abstract>
+      <t>This memo specifies two authenticated encryption algorithms that are nonce misuse-resistant - that is that they do not fail catastrophically if a nonce is repeated.</t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section title="Introduction">
+      <t>The concept of "Authenticated encryption with additional data" (AEAD <xref target="RFC5116"/>) couples confidentiality and integrity in a single operation that is easier for practitioners to use correctly. The most popular AEAD, AES-GCM <xref target="GCM"/>, is seeing widespread use due to its attractive performance.</t>
+
+      <t>However, most AEADs suffer catastrophic failures of confidentiality and/or integrity when two distinct messages are encrypted with the same nonce. While the requirements for AEADs specify that the pair of (key, nonce) shall only ever be used once, and thus prohibit this, in practice this is a worry.</t>
+
+      <t>Nonce misuse-resistant AEADs do not suffer from this problem. For this class of AEADs, encrypting two messages with the same nonce only discloses whether the messages were equal or not. This is the minimum amount of information that a deterministic algorithm can leak in the situation.</t>
+
+      <t>This memo specifies two nonce misuse-resistant AEADs: <spanx style="verb">AEAD_AES_128_GCM_SIV</spanx> and <spanx style="verb">AEAD_AES_256_GCM_SIV</spanx>. These AEADs are designed to be able to take advantage of existing hardware support for AES-GCM and can run within 5% of the speed of AES-GCM.</t>
+
+      <t>We suggest that these AEADs be considered in any situation where there is the slightest doubt about nonce uniqueness.</t>
+    </section>
+
+    <section title="Requirements Language">
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+      "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+      document are to be interpreted as described in <xref
+      target="RFC2119">RFC 2119</xref>.</t>
+    </section>
+
+    <section title="POLYVAL">
+      <t>The GCM-SIV construction is similar to GCM: the block cipher is used in counter mode to encrypt the plaintext and a polynomial authenticator is used to provide integrity. The authenticator in GCM-SIV is called POLYVAL.</t>
+
+      <t>POLYVAL, like GHASH, operates in a binary field of size 2^128. Elements of this field are 128-bit strings where each bit is a coefficient of a power of x and the first is the coefficient for x^127. The field is defined by the irreducable polynomial x^128 + x^127 + x^126 + x^121 + 1. The sum of any two elements in the field is the result of XORing them. The product of any two elements is calculated using standard polynomial multiplication followed by reduction by the irreducable polynomial.</t>
+
+      <t>We define another binary operation on elements of the field: dot(a, b), where dot(a, b) = a * b * x^-128. The value x^-128 is equal to x^127 + x^124 + x^121 + x^114 + 1. Since the result of multiplications in the field is defined to be reduced, the result of dot(a, b) is another field element.</t>
+
+      <t>POLYVAL takes a field element, H, and a series of field elements X_1, ..., X_s. Its result is S_s, where S is defined by the iteration S_0 = 0; S_j = dot(S_{j-1} + X_j, H).</t>
+
+      <t>We note that POLYVAL(H, X_1, X_2, ...) is equal to ByteSwap(GHASH(H, ByteSwap(X_1), ByteSwap(X_2), ...)), where ByteSwap is a function that converts a field element to a 128-bit string, reverses the order of the bytes, and interprets the result as a field element again.</t>
+    </section>
+
+    <section title="Encryption">
+      <t>AES-GCM-SIV encryption takes a 128-bit authentication key, an AES key, a 128-bit nonce, and arbitrary-length plaintext and additional data inputs. It outputs an authenticated ciphertext that will be 16 bytes longer than the plaintext.</t>
+
+      <t>Define length_block as a 16-byte value that is the concatenation of the 64-bit, big-endian encodings of len(additional_data)*8 and len(plaintext)*8. Pad the plaintext and addtional data with zeros until they are each a multiple of 16 bytes, the AES block size. Then X_1, X_2, etc (the series of field elements that are inputs to POLYVAL) are the concatenation of the padded additional data, the padded plaintext and length_block.</t>
+
+      <t>Calculate S_s = POLYVAL(authentication_key, X_1, X_2, ...) then XOR S_s with the nonce and set the first bit to zero. Encrypt the result with AES using the AES key to produce the tag.</t>
+
+      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter is the tag with the first bit set to one and the the last 32 bits set to zero. The counter advances by incrementing the final 32 bits as an unsigned, big-endian number. The result of the encryption is the resulting ciphertext followed by the tag.</t>
+    </section>
+
+    <section title="Decryption">
+      <t>Decryption takes a 128-bit authentication key, an AES key, a 128-bit nonce, and an arbitrary-length ciphertext. It either fails, or outputs a plaintext that is 16 bytes shorter than the ciphertext.</t>
+
+      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes, then fail. Otherwise split the input into the encrypted plaintext and a 16-byte tag. Decrypt the encrypted plaintext using counter mode where the initial counter is the tag with the first bit set to one and the bottom 32 bits set to zero. The counter advances in the same way as for encryption.</t>
+
+      <t>Pad the additional data and plaintext with zeros until they are each a multiple of 16 bytes, the AES block size. Calculate length_block and X_1, X_2, etc as above and compute S_s = POLYVAL(authentication_key, X_1, X_2, ...). Compute the expected tag by XORing S_s and the nonce, setting the first bit to zero and encrypting with AES. Compare the provided and expected tag values in constant time. If they do not match, fail. Otherwise return the plaintext.</t>
+    </section>
+
+    <section title="AEADs">
+      <t>We define two AEADs that use AES-GCM-SIV: AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV. They differ only in the size of the AES key used.</t>
+
+      <t>Since the defintion of an AEAD requires that the key be a single value we define AEAD_AES_128_GCM_SIV to take a 32-byte key: the first 16 bytes of which are used as the authentication key and the remaining 16 bytes are used as the AES key. Likewise AEAD_AES_256_GCM_SIV takes a 48-byte key: the 16 bytes are again the authentication key and the remaining 32 bytes are the AES key.</t>
+
+      <t>The parameters for AEAD_AES_128_GCM_SIV are then: K_LEN is 32, P_MAX is 2^36 (CHECK), A_MAX is 2^64 - 1 (CHECK), N_MIN and N_MAX are 16 and C_MAX is 2^36 + 16.</t>
+
+      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size: K_LEN is 48, P_MAX is 2^36 (CHECK), A_MAX is 2^64 - 1 (CHECK), N_MIN and N_MAX are 16 and C_MAX is 2^36 + 16.</t>
+    </section>
+
+    <section title="Worked example">
+    </section>
+
+    <section title="Test vectors">
+    </section>
+
+    <section title="Security Considerations" anchor="seccon">
+    </section>
+
+    <section title="IANA Considerations">
+      <t>This document has no actions for IANA.</t>
+    </section>
+
+    <section title="Acknowledgements">
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      &RFC2119;
+    </references>
+
+    <references title="Informative References">
+      &RFC5116;
+
+      <reference anchor="GCM" target="http://csrc.nist.gov/publications/nistpubs/800-38D/SP-800-38D.pdf">
+        <front>
+          <title>
+            Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC
+          </title>
+          <author initials="M." surname="Dworkin" fullname="M. Dworkin">
+            <organization/>
+          </author>
+          <date year="2007" month="November"/>
+        </front>
+        <seriesInfo name="NIST" value="SP-800-38D"/>
+      </reference>
+
+    </references>
+  </back>
+</rfc>
