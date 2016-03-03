@@ -54,6 +54,24 @@ func TestPolyval(t *testing.T) {
 	}
 }
 
+func TestHelloWorld(t *testing.T) {
+	plaintext := []byte("Hello world")
+	ad := []byte("example")
+	key, _ := hex.DecodeString("4f2229294acbdf99c4584ec0e6e23638fab3a110b8ae672eba07d91ba52d6cea")
+	nonce, _ := hex.DecodeString("752abad3e0afb5f434dc4310f71f3d21")
+
+	gcmsiv, err := NewGCMSIV(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ciphertext := gcmsiv.Seal(nil, nonce, plaintext, ad)
+	const expected = "fb6e7581f4802a46c4c2a88e2d69ed54c0997cae05d8b2be1d963e"
+	if hexCiphertext := hex.EncodeToString(ciphertext); hexCiphertext != expected {
+		t.Errorf("got %s, wanted %s", hexCiphertext, expected)
+	}
+}
+
 func TestAgainstVectors128(t *testing.T) {
 	in, err := os.Open("output_2keys_be.txt")
 	if err != nil {

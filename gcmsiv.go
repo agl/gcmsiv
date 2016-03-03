@@ -258,11 +258,12 @@ func cryptBytes(dst, src, initCtr []byte, block cipher.Block) []byte {
 	copy(ctrBlock[:], initCtr)
 	ctrBlock[15] |= 0x80
 
-	for ctr := uint32(1); len(src) > 0; ctr += 1 {
+	for ctr := uint32(0); len(src) > 0; ctr += 1 {
 		binary.LittleEndian.PutUint32(ctrBlock[:], ctr)
 		block.Encrypt(keystreamBlock[:], ctrBlock[:])
 
 		plaintextBlock := src
+
 		if len(plaintextBlock) > 16 {
 			plaintextBlock = plaintextBlock[:16]
 		}
