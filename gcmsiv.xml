@@ -11,9 +11,9 @@
 <?rfc sortrefs="yes" ?>
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
-<rfc category="info" docName="draft-gueron-gcmsiv-00" ipr="trust200902">
+<rfc category="info" docName="draft-gueron-gcmsiv-02" ipr="trust200902">
   <front>
-    <title abbrev="cfrgcurve">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
+    <title abbrev="aes-gcm-siv">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
     <author fullname="Shay Gueron" initials="S." surname="Gueron">
       <organization>University of Haifa and Intel Corporation</organization>
@@ -94,7 +94,7 @@
     <section title="POLYVAL">
       <t>The GCM-SIV construction is similar to GCM: the block cipher is used in counter mode to encrypt the plaintext and a polynomial authenticator is used to provide integrity. The authenticator in GCM-SIV is called POLYVAL.</t>
 
-      <t>POLYVAL, like GHASH, operates in a binary field of size 2^128. The field is defined by the irreducable polynomial x^128 + x^127 + x^126 + x^121 + 1. The sum of any two elements in the field is the result of XORing them. The product of any two elements is calculated using standard polynomial multiplication followed by reduction by the irreducable polynomial.</t>
+      <t>POLYVAL, like GHASH, operates in a binary field of size 2^128. The field is defined by the irreducible polynomial x^128 + x^127 + x^126 + x^121 + 1. The sum of any two elements in the field is the result of XORing them. The product of any two elements is calculated using standard polynomial multiplication followed by reduction by the irreducible polynomial.</t>
 
       <t>We define another binary operation on elements of the field: dot(a, b), where dot(a, b) = a * b * x^-128. The value x^-128 is equal to x^127 + x^124 + x^121 + x^114 + 1. Since the result of multiplications in the field is defined to be reduced, the result of dot(a, b) is another field element.</t>
 
@@ -110,7 +110,7 @@
 
       <t>If the AES key is 16 bytes long then define the <spanx>record-encryption key</spanx> as the encryption of the nonce using the AES key. If AES-256 is being used then this is insufficient as 256 bits of key material are needed. Therefore the record-encryption key in this case is the concatenation of the result of encrypting, using the AES key, the nonce with the least-significant bit of the first byte set to zero and then to one.</t>
 
-      <t>Define the <spanx>length block</spanx> as a 16-byte value that is the concatenation of the 64-bit, little-endian encodings of len(additional_length)*8 and len(plaintext)*8. Pad the plaintext and addtional data with zeros until they are each a multiple of 16 bytes, the AES block size. Then X_1, X_2, etc (the series of field elements that are inputs to POLYVAL) are the concatenation of the padded additional data, the padded plaintext and the length block.</t>
+      <t>Define the <spanx>length block</spanx> as a 16-byte value that is the concatenation of the 64-bit, little-endian encodings of len(additional_length)*8 and len(plaintext)*8. Pad the plaintext and additional data with zeros until they are each a multiple of 16 bytes, the AES block size. Then X_1, X_2, etc (the series of field elements that are inputs to POLYVAL) are the concatenation of the padded additional data, the padded plaintext and the length block.</t>
 
       <t>Calculate S_s = POLYVAL(authentication_key, X_1, X_2, ...), XOR it with the nonce and then set the most-significant bit of the last byte to zero. Encrypt the result with AES using the record-encryption key to produce the tag.</t>
 
@@ -130,7 +130,7 @@
     <section title="AEADs">
       <t>We define two AEADs, in the format of RFC 5116, that use AES-GCM-SIV: AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV. They differ only in the size of the AES key used.</t>
 
-      <t>Since the defintion of an AEAD requires that the key be a single value we define AEAD_AES_128_GCM_SIV to take a 32-byte key: the first 16 bytes of which are used as the authentication key and the remaining 16 bytes are used as the AES key. Likewise AEAD_AES_256_GCM_SIV takes an 48-byte key: the first 16 bytes are again the authentication key and the remaining 32 bytes is the AES key.</t>
+      <t>Since the definition of an AEAD requires that the key be a single value we define AEAD_AES_128_GCM_SIV to take a 32-byte key: the first 16 bytes of which are used as the authentication key and the remaining 16 bytes are used as the AES key. Likewise AEAD_AES_256_GCM_SIV takes an 48-byte key: the first 16 bytes are again the authentication key and the remaining 32 bytes is the AES key.</t>
 
       <t>The parameters for AEAD_AES_128_GCM_SIV are then: K_LEN is 32, P_MAX is 2^36, A_MAX is 2^61 - 1, N_MIN and N_MAX are 16 and C_MAX is 2^36 + 16.</t>
 
@@ -150,7 +150,7 @@
 
       <t>The length block contains the encoding of the bit-lengths of the additional data and plaintext, respectively, which are and 56 and 88. Thus length_block is 38000000000000005800000000000000.</t>
 
-      <t>The input to POLYVAL is the padded addtional data, padded plaintext and then the length block. This is 6578616d706c6500000000000000000048656c6c6f20776f726c64000000000058000000000000003800000000000000.</t>
+      <t>The input to POLYVAL is the padded additional data, padded plaintext and then the length block. This is 6578616d706c6500000000000000000048656c6c6f20776f726c64000000000058000000000000003800000000000000.</t>
 
       <t>The POLYVAL key will be the first 16 bytes of the AEAD key, namely 4f2229294acbdf99c4584ec0e6e23638. Calling POLYVAL with that key and the input above results in S_s = 0b9ae2c5bd7fe4dcd17a007d11ac280e. XORing this with the nonce gives 7eb058165dd05128e5a6436de6b3152f.</t>
 
