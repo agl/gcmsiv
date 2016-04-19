@@ -11,7 +11,7 @@
 <?rfc sortrefs="yes" ?>
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
-<rfc category="info" docName="draft-gueron-gcmsiv-03" ipr="trust200902">
+<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-00" ipr="trust200902">
   <front>
     <title abbrev="aes-gcm-siv">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
@@ -170,7 +170,7 @@
 
       <t>Deriving fresh AES keys for each nonce eliminates this problem.</t>
 
-      <t>It's worth noting that the 2^32 limit still applies as the number of distinct messages that can be encrypted under a fixed nonce. Nonces should be unique and the misuse-resistance of these AEADs should not be depended on to the extent that 2^32 duplicates may occur. (Or 2^31 duplicates in the case of AEAD_AES_256_GCM_SIV.)</t>
+      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. Thus, with a fixed nonce, the 2^32 limit still applies as the number of distinct messages that can be encrypted under a given key. Nonces should be unique and the misuse-resistance of these AEADs should not be depended on to the extent that 2^32 duplicates may occur. (Or 2^31 duplicates in the case of AEAD_AES_256_GCM_SIV.)</t>
 
       <t>The construction of the record-encryption key in AEAD_AES_256_GCM_SIV cannot result in the first and second halves of the key having the same value. Thus 2^128 of the 2^256 keys cannot occur. We consider this to be insignificant.</t>
 
