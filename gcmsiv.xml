@@ -110,13 +110,26 @@
 
       <t>If the AES key is 16 bytes long then AES-128 is used throughout and the <spanx>record-encryption key</spanx> is defined as the encryption of the nonce using the AES key.</t>
 
-      <t>Alternatively, if the AES key is 32 bytes long then AES-256 is used throughout. Simply encrypting the nonce (as done in the case of a 16 bytes key) is now insufficient, because 256 bits of key material are needed. Therefore, AES-256 is used as a Pseudo Random Function to produce the 256 bits record-encryption key. This record-encryption key is defined as the concatenation of the result of encrypting, using the AES key, the nonce with the least-significant bit of the first byte set to zero and then to one.</t>
+      <t>Alternatively, if the AES key is 32 bytes long then AES-256 is used throughout. Encrypting the nonce generates 128 bits of output, but this insufficient with AES-256 because 256 bits are needed. Thus the encryption of the nonce is used as the final 16 bytes of the record-encryption key and those sixteen bytes are encrypted again to generate the first sixteen bytes.</t>
+
+      <t>In pseudo-code form:</t>
+        <figure align="center">
+          <artwork align="left"><![CDATA[
+if len(AES-key) == 16 {
+  record-encryption-key = AES128(key = AES-key, input = nonce)
+} else if len(AES-key) == 32 {
+  second-half = AES256(key = AES-key, input = nonce)
+  first-half = AES256(key = AES-key, input = second-half)
+  record-encryption-key = concatenate(first-half, second-half)
+}
+]]></artwork>
+        </figure>
 
       <t>Define the <spanx>length block</spanx> as a 16-byte value that is the concatenation of the 64-bit, little-endian encodings of len(additional_length)*8 and len(plaintext)*8. Pad the plaintext and additional data with zeros until they are each a multiple of 16 bytes, the AES block size. Then X_1, X_2, etc (the series of field elements that are inputs to POLYVAL) are the concatenation of the padded additional data, the padded plaintext and the length block.</t>
 
       <t>Calculate S_s = POLYVAL(authentication_key, X_1, X_2, ...), XOR it with the nonce and then set the most-significant bit of the last byte to zero. Encrypt the result with AES using the record-encryption key to produce the tag.</t>
 
-      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter is the tag with the most-significant bit of the last byte set to one and the first 32 bits set to zero. The counter advances by incrementing the first 32 bits interpreted as an unsigned, little-endian integer. The result of the encryption is the resulting ciphertext followed by the tag.</t>
+      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter is the tag with the most-significant bit of the last byte set to one. The counter advances by incrementing the first 32 bits interpreted as an unsigned, little-endian integer. The result of the encryption is the resulting ciphertext followed by the tag.</t>
     </section>
 
     <section title="Decryption">
@@ -124,7 +137,7 @@
 
       <t>Firstly, the record-encryption key is derived in the same manner as when encrypting.</t>
 
-      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes, then fail. Otherwise split the input into the encrypted plaintext and a 16-byte tag. Decrypt the encrypted plaintext with the record-encryption key in counter mode, where the initial counter is the tag with the most-significant bit of the last byte set to one and the first 32 bits set to zero. The counter advances in the same way as for encryption.</t>
+      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes, then fail. Otherwise split the input into the encrypted plaintext and a 16-byte tag. Decrypt the encrypted plaintext with the record-encryption key in counter mode, where the initial counter is the tag with the most-significant bit of the last byte. The counter advances in the same way as for encryption.</t>
 
       <t>Pad the additional data and plaintext with zeros until they are each a multiple of 16 bytes, the AES block size. Calculate length_block and X_1, X_2, etc as above and compute S_s = POLYVAL(authentication_key, X_1, X_2, ...). Compute the expected tag by XORing S_s and the nonce, setting the most-significant byte of the last byte to zero and encrypting with the record-encryption key. Compare the provided and expected tag values in constant time. If they do not match, fail. Otherwise return the plaintext.</t>
     </section>
@@ -170,7 +183,7 @@
 
       <t>Deriving fresh AES keys for each nonce eliminates this problem.</t>
 
-      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. Thus, with a fixed nonce, the 2^32 limit still applies as the number of distinct messages that can be encrypted under a given key. Nonces should be unique and the misuse-resistance of these AEADs should not be depended on to the extent that 2^32 duplicates may occur. (Or 2^31 duplicates in the case of AEAD_AES_256_GCM_SIV.)</t>
+      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. Thus, with a fixed nonce, the 2^32 limit still applies as the number of distinct messages that can be encrypted under a given key. Nonces should be unique and the misuse-resistance of these AEADs should not be depended on to the extent that 2^32 duplicates may occur.</t>
 
       <t>The construction of the record-encryption key in AEAD_AES_256_GCM_SIV cannot result in the first and second halves of the key having the same value. Thus 2^128 of the 2^256 keys cannot occur. We consider this to be insignificant.</t>
 
@@ -182,6 +195,7 @@
     </section>
 
     <section title="Acknowledgements">
+      <t>The authors would like to thank Uri Blumenthal for his helpful suggestions.</t>
     </section>
   </middle>
 
