@@ -11,7 +11,7 @@
 <?rfc sortrefs="yes" ?>
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
-<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-00" ipr="trust200902">
+<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-01" ipr="trust200902">
   <front>
     <title abbrev="aes-gcm-siv">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
@@ -55,7 +55,7 @@
       </address>
     </author>
 
-    <date month="April" year="2016" />
+    <date month="May" year="2016" />
 
     <area>General</area>
     <workgroup>CFRG</workgroup>
@@ -94,9 +94,9 @@
     <section title="POLYVAL">
       <t>The GCM-SIV construction is similar to GCM: the block cipher is used in counter mode to encrypt the plaintext and a polynomial authenticator is used to provide integrity. The authenticator in GCM-SIV is called POLYVAL.</t>
 
-      <t>POLYVAL, like GHASH, operates in a binary field of size 2^128. The field is defined by the irreducible polynomial x^128 + x^127 + x^126 + x^121 + 1. The sum of any two elements in the field is the result of XORing them. The product of any two elements is calculated using standard polynomial multiplication followed by reduction by the irreducible polynomial.</t>
+      <t>POLYVAL, like GHASH, operates in a binary field of size 2^128. The field is defined by the irreducible polynomial x^128 + x^127 + x^126 + x^121 + 1. The sum of any two elements in the field is the result of XORing them. The product of any two elements is calculated using standard (binary) polynomial multiplication followed by reduction modulo the irreducible polynomial.</t>
 
-      <t>We define another binary operation on elements of the field: dot(a, b), where dot(a, b) = a * b * x^-128. The value x^-128 is equal to x^127 + x^124 + x^121 + x^114 + 1. Since the result of multiplications in the field is defined to be reduced, the result of dot(a, b) is another field element.</t>
+      <t>We define another binary operation on elements of the field: dot(a, b), where dot(a, b) = a * b * x^-128. The value of the field element x^-128 is equal to x^127 + x^124 + x^121 + x^114 + 1. The result, dot(a, b), of this multiplication is another field element.</t>
 
       <t>Polynomials in this field are converted to and from 128-bit strings by taking the least-significant bit of the first byte to be the coefficient of x^0, the most-significant bit of the first byte to the the coefficient of x^7 and so on, until the most-significant bit of the last byte is the coefficient of x^127.</t>
 
@@ -129,7 +129,7 @@ if len(AES-key) == 16 {
 
       <t>Calculate S_s = POLYVAL(authentication_key, X_1, X_2, ...), XOR it with the nonce and then set the most-significant bit of the last byte to zero. Encrypt the result with AES using the record-encryption key to produce the tag.</t>
 
-      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter is the tag with the most-significant bit of the last byte set to one. The counter advances by incrementing the first 32 bits interpreted as an unsigned, little-endian integer. The result of the encryption is the resulting ciphertext followed by the tag.</t>
+      <t>The ciphertext is produced by using AES in counter mode on the unpadded plaintext. The initial counter block is the tag with the most-significant bit of the last byte set to one. The counter advances by incrementing the first 32 bits interpreted as an unsigned, little-endian integer. The result of the encryption is the resulting ciphertext followed by the tag.</t>
     </section>
 
     <section title="Decryption">
@@ -137,7 +137,7 @@ if len(AES-key) == 16 {
 
       <t>Firstly, the record-encryption key is derived in the same manner as when encrypting.</t>
 
-      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes, then fail. Otherwise split the input into the encrypted plaintext and a 16-byte tag. Decrypt the encrypted plaintext with the record-encryption key in counter mode, where the initial counter is the tag with the most-significant bit of the last byte. The counter advances in the same way as for encryption.</t>
+      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes, then fail. Otherwise split the input into the encrypted plaintext and a 16-byte tag. Decrypt the encrypted plaintext with the record-encryption key in counter mode, where the initial counter block is the tag with the most-significant bit of the last byte. The counter advances in the same way as for encryption.</t>
 
       <t>Pad the additional data and plaintext with zeros until they are each a multiple of 16 bytes, the AES block size. Calculate length_block and X_1, X_2, etc as above and compute S_s = POLYVAL(authentication_key, X_1, X_2, ...). Compute the expected tag by XORing S_s and the nonce, setting the most-significant byte of the last byte to zero and encrypting with the record-encryption key. Compare the provided and expected tag values in constant time. If they do not match, fail. Otherwise return the plaintext.</t>
     </section>
@@ -171,9 +171,9 @@ if len(AES-key) == 16 {
 
       <t>Before encrypting the most-significant bit of the last byte is cleared. This again gives 7eb058165dd05128e5a6436de6b3152f because that bit happened to be zero already. Encrypting with the record key gives the tag, which is 8e2d69ed54c0997cae05d8b2be1d963e.</t>
 
-      <t>In order to form the initial counter block, the most-significant bit of the last byte of the tag is set to one and a 32-bit, little-endian counter is written to the first four bytes. This gives 0000000054c0997cae05d8b2be1d96be. Encrypting this with the record key gives the first block of the keystream: b30b19ed9ba05d29b6aecc0146b7fb19.</t>
+      <t>In order to form the initial counter block, the most-significant bit of the last byte of the tag is set to one. This gives 8e2d69ed54c0997cae05d8b2be1d96be. Encrypting this with the record key gives the first block of the keystream: efc341b420fda4250c21e8571560d8f9.</t>
 
-      <t>The final ciphertext is the result of XORing the plaintext with the keystream and appending the tag. That gives fb6e7581f4802a46c4c2a88e2d69ed54c0997cae05d8b2be1d963e.</t>
+      <t>The final ciphertext is the result of XORing the plaintext with the keystream and appending the tag. That gives a7a62dd84fddd34a7e4d8c8e2d69ed54c0997cae05d8b2be1d963e.</t>
     </section>
 
     <section title="Security Considerations" anchor="seccon">
@@ -322,7 +322,7 @@ POLYVAL_xor_NONCE  =            07000000000000809100000000283b1c
 with MSBit cleared =            07000000000000809100000000283b1c
 TAG =                           5537355b0a4f4cb05ce77d1b815d7299
 AAD =
-CT  =                           3b0f5baabe526e9f
+CT  =                           9c9ba00f9686d157
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -342,7 +342,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000000a4f4cb05ce77d1b815d7299
+                                5537355b0a4f4cb05ce77d1b815d7299
 
 
 
@@ -375,7 +375,7 @@ POLYVAL_xor_NONCE  =            0700000000000040d900000000283b1c
 with MSBit cleared =            0700000000000040d900000000283b1c
 TAG =                           dd55830c690eadd7fd2155b3615470bd
 AAD =
-CT  =                           9391b4122fccfecb60ec40ab
+CT  =                           af21532e06416ab7a902710e
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -395,7 +395,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000690eadd7fd2155b3615470bd
+                                dd55830c690eadd7fd2155b3615470bd
 
 
 
@@ -428,7 +428,7 @@ POLYVAL_xor_NONCE  =            07000000000000002301000000283b1c
 with MSBit cleared =            07000000000000002301000000283b1c
 TAG =                           147650d36f064f6b5dbbe8f04077d903
 AAD =
-CT  =                           565e4a931280ecdece8620abcf90b65e
+CT  =                           a42b0ef844bd99fb2658e7a93fc8159c
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -448,7 +448,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006f064f6b5dbbe8f04077d983
+                                147650d36f064f6b5dbbe8f04077d983
 
 
 
@@ -483,8 +483,8 @@ POLYVAL_xor_NONCE  =            020000000000000046020000f0507615
 with MSBit cleared =            020000000000000046020000f0507615
 TAG =                           78a50cb3f901ee38c588f6662d785a24
 AAD =
-CT  =                           9b1d2ba7d2d3a02efeecc18d03be2b56
-                                1753b147ae642183f2c4bbd72e4ed8e1
+CT  =                           ebb355fb913c781bee9ea36ff920193f
+                                80c8aa6d0abd197f039be49616f62e4f
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -504,8 +504,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000f901ee38c588f6662d785aa4
-                                01000000f901ee38c588f6662d785aa4
+                                78a50cb3f901ee38c588f6662d785aa4
+                                79a50cb3f901ee38c588f6662d785aa4
 
 
 
@@ -542,9 +542,9 @@ POLYVAL_xor_NONCE  =            0d00000000000000650300203e788f7f
 with MSBit cleared =            0d00000000000000650300203e788f7f
 TAG =                           a75aa62b704e826d984a72184e370598
 AAD =
-CT  =                           dcc8d2f2c0e30b565f5d3ef58bf6638f
-                                f50e8909ced008e0515b79f7c8c3d1f5
-                                8ec1bb09177133b4cd1b375911d81579
+CT  =                           5cf01ee258867977c0dd93dc33c9ccaf
+                                fcf088d95bb3d17221cfb58f2cd14703
+                                068463f2c0a18185cd745bcaf7b72ed5
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -564,9 +564,9 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000704e826d984a72184e370598
-                                01000000704e826d984a72184e370598
-                                02000000704e826d984a72184e370598
+                                a75aa62b704e826d984a72184e370598
+                                a85aa62b704e826d984a72184e370598
+                                a95aa62b704e826d984a72184e370598
 
 
 
@@ -605,10 +605,10 @@ POLYVAL_xor_NONCE  =            0c000000000000008c04c04c63ad584f
 with MSBit cleared =            0c000000000000008c04c04c63ad584f
 TAG =                           d7f4efe2f6c72e3b8df168cab6b790ab
 AAD =
-CT  =                           472d6309563c74b6d5497145e929725a
-                                ab08979e6c4fc72c30c2e3a1ce568b94
-                                92e1b0351167937ee2faae79d40af93e
-                                24eee045fdab1b2040440632f1a34433
+CT  =                           442acedd0154ad46741b42ea12bd76b6
+                                6f3f13e79c89e88fc0d0651ab70aa474
+                                226f538c660d95f0867dc65d7c0b0af6
+                                17339e1db42294b52b4ab4fc06234769
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -628,10 +628,10 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000f6c72e3b8df168cab6b790ab
-                                01000000f6c72e3b8df168cab6b790ab
-                                02000000f6c72e3b8df168cab6b790ab
-                                03000000f6c72e3b8df168cab6b790ab
+                                d7f4efe2f6c72e3b8df168cab6b790ab
+                                d8f4efe2f6c72e3b8df168cab6b790ab
+                                d9f4efe2f6c72e3b8df168cab6b790ab
+                                daf4efe2f6c72e3b8df168cab6b790ab
 
 
 
@@ -665,7 +665,7 @@ POLYVAL_xor_NONCE  =            100000000000008091000000f0501631
 with MSBit cleared =            100000000000008091000000f0501631
 TAG =                           633c11b2eee1f65be0e3f1e0c824c5e0
 AAD =                           01
-CT  =                           5adcda74026afb99
+CT  =                           b3aa6df500d38f0f
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -685,7 +685,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000eee1f65be0e3f1e0c824c5e0
+                                633c11b2eee1f65be0e3f1e0c824c5e0
 
 
 
@@ -719,7 +719,7 @@ POLYVAL_xor_NONCE  =            1000000000000040d9000000f0501631
 with MSBit cleared =            1000000000000040d9000000f0501631
 TAG =                           f229e75b2c4c3048fc70f163c9aefe0d
 AAD =                           01
-CT  =                           b4fabbadb27257bbe8b807d5
+CT  =                           b5bea0352fbe77e5dc84aac4
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -739,7 +739,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000002c4c3048fc70f163c9aefe8d
+                                f229e75b2c4c3048fc70f163c9aefe8d
 
 
 
@@ -773,7 +773,7 @@ POLYVAL_xor_NONCE  =            100000000000000023010000f0501631
 with MSBit cleared =            100000000000000023010000f0501631
 TAG =                           cfb5aa16cdd9d39acc5d99b6eee2c6fc
 AAD =                           01
-CT  =                           dce7c7cd4d1060fdc663b9fe8de25385
+CT  =                           86f7d1853ecc302a598c0e054d917a9c
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -793,7 +793,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000cdd9d39acc5d99b6eee2c6fc
+                                cfb5aa16cdd9d39acc5d99b6eee2c6fc
 
 
 
@@ -829,8 +829,8 @@ POLYVAL_xor_NONCE  =            1f00000000000000460200203e78ef5b
 with MSBit cleared =            1f00000000000000460200203e78ef5b
 TAG =                           8df5606f057468e4b38e89736255ad2d
 AAD =                           01
-CT  =                           c6d3098e12ac653520764cbccdb90655
-                                b3d91bf034f7549d5f775fca5d6ad34f
+CT  =                           a58e74cc44de5637d02d800119da54c1
+                                df3f9f8a1930953819a7d8d1d76f10c0
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -850,8 +850,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000057468e4b38e89736255adad
-                                01000000057468e4b38e89736255adad
+                                8df5606f057468e4b38e89736255adad
+                                8ef5606f057468e4b38e89736255adad
 
 
 
@@ -889,9 +889,9 @@ POLYVAL_xor_NONCE  =            1e000000000000006503c04c63ad386b
 with MSBit cleared =            1e000000000000006503c04c63ad386b
 TAG =                           b52274e14d6111c74edf5d95855256a2
 AAD =                           01
-CT  =                           186abbbe486294281b1514c11c240e6a
-                                4d959a1ac6da46e5b83bbe2d3d37de44
-                                ab009bb885b5c0bf83db80b651c06e74
+CT  =                           9ceaefd1522cc88b1a9dde5f86253b70
+                                309a25c160bb37dc677ed126ce23e7ab
+                                31ea937735d6353af5cf02de8ff5b2ff
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -911,9 +911,9 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000004d6111c74edf5d95855256a2
-                                010000004d6111c74edf5d95855256a2
-                                020000004d6111c74edf5d95855256a2
+                                b52274e14d6111c74edf5d95855256a2
+                                b62274e14d6111c74edf5d95855256a2
+                                b72274e14d6111c74edf5d95855256a2
 
 
 
@@ -953,10 +953,10 @@ POLYVAL_xor_NONCE  =            18000000000000008c841a01712a376e
 with MSBit cleared =            18000000000000008c841a01712a376e
 TAG =                           668fc00b6b40b4bb0c8d6cdb9730358d
 AAD =                           01
-CT  =                           499ec09c83c2b79cf6b219e6b79ec81c
-                                7c7b572c8a04b322094ec011e7003ded
-                                388627f831ee79bd3df5db27f648125a
-                                fbfe2774388c34bb652b866ca84bdcd8
+CT  =                           457e976e1f62be30a2bfb8d8801b7282
+                                8dd5349701b0f93007bcae4c2daed6fa
+                                d91c3ae1751edaf54abf47bb1f0608dd
+                                2961c86e7860dcb75336be054c1ad6cf
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -976,10 +976,10 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006b40b4bb0c8d6cdb9730358d
-                                010000006b40b4bb0c8d6cdb9730358d
-                                020000006b40b4bb0c8d6cdb9730358d
-                                030000006b40b4bb0c8d6cdb9730358d
+                                668fc00b6b40b4bb0c8d6cdb9730358d
+                                678fc00b6b40b4bb0c8d6cdb9730358d
+                                688fc00b6b40b4bb0c8d6cdb9730358d
+                                698fc00b6b40b4bb0c8d6cdb9730358d
 
 
 
@@ -1013,7 +1013,7 @@ POLYVAL_xor_NONCE  =            db000000000000c048000000f050f665
 with MSBit cleared =            db000000000000c048000000f050f665
 TAG =                           488346eaebe2d64ffa58e0fa82f8cd43
 AAD =                           010000000000000000000000
-CT  =                           7d5240be
+CT  =                           c2b96956
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -1033,7 +1033,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000ebe2d64ffa58e0fa82f8cdc3
+                                488346eaebe2d64ffa58e0fa82f8cdc3
 
 
 
@@ -1072,8 +1072,8 @@ with MSBit cleared =            0b010000000000c06b01c04c63ad9807
 TAG =                           d010794cfdbbc65ef641b8ccb9c2dda3
 AAD =                           01000000000000000000000000000000
                                 0200
-CT  =                           6d98c309d4f472480c5b1389e83569e5
-                                217ddb9c
+CT  =                           348bf14b0fe2f8a2c3e843429df6276c
+                                c0e5e688
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -1093,8 +1093,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000fdbbc65ef641b8ccb9c2dda3
-                                01000000fdbbc65ef641b8ccb9c2dda3
+                                d010794cfdbbc65ef641b8ccb9c2dda3
+                                d110794cfdbbc65ef641b8ccb9c2dda3
 
 
 
@@ -1133,8 +1133,8 @@ with MSBit cleared =            67010000000000600701c04c63add85e
 TAG =                           98e16515942fb8ff9ef108e7ce53a963
 AAD =                           01000000000000000000000000000000
                                 02000000
-CT  =                           4649087685b01b476bd3420f36ca67d3
-                                b18b
+CT  =                           f803a8b63ffa8c44a391c7e4ccc31e61
+                                79d1
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
 
 ***************************
@@ -1154,8 +1154,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000942fb8ff9ef108e7ce53a9e3
-                                01000000942fb8ff9ef108e7ce53a9e3
+                                98e16515942fb8ff9ef108e7ce53a9e3
+                                99e16515942fb8ff9ef108e7ce53a9e3
 
 
 
@@ -1190,6 +1190,15 @@ TAG =                           fabfd7964630aa6128ee6269f061f08b
 AAD =
 CT  =
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =
+
+TAG' =                          fabfd7964630aa6128ee6269f061f08b
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1240,8 +1249,17 @@ POLYVAL_xor_NONCE  =            07000000000000809100000000283b1c
 with MSBit cleared =            07000000000000809100000000283b1c
 TAG =                           5537355b0a4f4cb05ce77d1b815d7299
 AAD =
-CT  =                           3b0f5baabe526e9f
+CT  =                           9c9ba00f9686d157
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 0100000000000000
+
+TAG' =                          5537355b0a4f4cb05ce77d1b815d7299
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1260,7 +1278,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000000a4f4cb05ce77d1b815d7299
+                                5537355b0a4f4cb05ce77d1b815d7299
 
 
 
@@ -1293,8 +1311,17 @@ POLYVAL_xor_NONCE  =            0700000000000040d900000000283b1c
 with MSBit cleared =            0700000000000040d900000000283b1c
 TAG =                           dd55830c690eadd7fd2155b3615470bd
 AAD =
-CT  =                           9391b4122fccfecb60ec40ab
+CT  =                           af21532e06416ab7a902710e
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 010000000000000000000000
+
+TAG' =                          dd55830c690eadd7fd2155b3615470bd
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1313,7 +1340,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000690eadd7fd2155b3615470bd
+                                dd55830c690eadd7fd2155b3615470bd
 
 
 
@@ -1346,8 +1373,17 @@ POLYVAL_xor_NONCE  =            07000000000000002301000000283b1c
 with MSBit cleared =            07000000000000002301000000283b1c
 TAG =                           147650d36f064f6b5dbbe8f04077d903
 AAD =
-CT  =                           565e4a931280ecdece8620abcf90b65e
+CT  =                           a42b0ef844bd99fb2658e7a93fc8159c
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+
+TAG' =                          147650d36f064f6b5dbbe8f04077d903
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1366,7 +1402,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006f064f6b5dbbe8f04077d983
+                                147650d36f064f6b5dbbe8f04077d983
 
 
 
@@ -1401,9 +1437,19 @@ POLYVAL_xor_NONCE  =            020000000000000046020000f0507615
 with MSBit cleared =            020000000000000046020000f0507615
 TAG =                           78a50cb3f901ee38c588f6662d785a24
 AAD =
-CT  =                           9b1d2ba7d2d3a02efeecc18d03be2b56
-                                1753b147ae642183f2c4bbd72e4ed8e1
+CT  =                           ebb355fb913c781bee9ea36ff920193f
+                                80c8aa6d0abd197f039be49616f62e4f
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+                                02000000000000000000000000000000
+
+TAG' =                          78a50cb3f901ee38c588f6662d785a24
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1422,8 +1468,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000f901ee38c588f6662d785aa4
-                                01000000f901ee38c588f6662d785aa4
+                                78a50cb3f901ee38c588f6662d785aa4
+                                79a50cb3f901ee38c588f6662d785aa4
 
 
 
@@ -1460,10 +1506,21 @@ POLYVAL_xor_NONCE  =            0d00000000000000650300203e788f7f
 with MSBit cleared =            0d00000000000000650300203e788f7f
 TAG =                           a75aa62b704e826d984a72184e370598
 AAD =
-CT  =                           dcc8d2f2c0e30b565f5d3ef58bf6638f
-                                f50e8909ced008e0515b79f7c8c3d1f5
-                                8ec1bb09177133b4cd1b375911d81579
+CT  =                           5cf01ee258867977c0dd93dc33c9ccaf
+                                fcf088d95bb3d17221cfb58f2cd14703
+                                068463f2c0a18185cd745bcaf7b72ed5
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+                                02000000000000000000000000000000
+                                03000000000000000000000000000000
+
+TAG' =                          a75aa62b704e826d984a72184e370598
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1482,9 +1539,9 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000704e826d984a72184e370598
-                                01000000704e826d984a72184e370598
-                                02000000704e826d984a72184e370598
+                                a75aa62b704e826d984a72184e370598
+                                a85aa62b704e826d984a72184e370598
+                                a95aa62b704e826d984a72184e370598
 
 
 
@@ -1523,11 +1580,23 @@ POLYVAL_xor_NONCE  =            0c000000000000008c04c04c63ad584f
 with MSBit cleared =            0c000000000000008c04c04c63ad584f
 TAG =                           d7f4efe2f6c72e3b8df168cab6b790ab
 AAD =
-CT  =                           472d6309563c74b6d5497145e929725a
-                                ab08979e6c4fc72c30c2e3a1ce568b94
-                                92e1b0351167937ee2faae79d40af93e
-                                24eee045fdab1b2040440632f1a34433
+CT  =                           442acedd0154ad46741b42ea12bd76b6
+                                6f3f13e79c89e88fc0d0651ab70aa474
+                                226f538c660d95f0867dc65d7c0b0af6
+                                17339e1db42294b52b4ab4fc06234769
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+                                02000000000000000000000000000000
+                                03000000000000000000000000000000
+                                04000000000000000000000000000000
+
+TAG' =                          d7f4efe2f6c72e3b8df168cab6b790ab
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1546,10 +1615,10 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000f6c72e3b8df168cab6b790ab
-                                01000000f6c72e3b8df168cab6b790ab
-                                02000000f6c72e3b8df168cab6b790ab
-                                03000000f6c72e3b8df168cab6b790ab
+                                d7f4efe2f6c72e3b8df168cab6b790ab
+                                d8f4efe2f6c72e3b8df168cab6b790ab
+                                d9f4efe2f6c72e3b8df168cab6b790ab
+                                daf4efe2f6c72e3b8df168cab6b790ab
 
 
 
@@ -1583,8 +1652,17 @@ POLYVAL_xor_NONCE  =            100000000000008091000000f0501631
 with MSBit cleared =            100000000000008091000000f0501631
 TAG =                           633c11b2eee1f65be0e3f1e0c824c5e0
 AAD =                           01
-CT  =                           5adcda74026afb99
+CT  =                           b3aa6df500d38f0f
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 0200000000000000
+
+TAG' =                          633c11b2eee1f65be0e3f1e0c824c5e0
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1603,7 +1681,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000eee1f65be0e3f1e0c824c5e0
+                                633c11b2eee1f65be0e3f1e0c824c5e0
 
 
 
@@ -1637,8 +1715,17 @@ POLYVAL_xor_NONCE  =            1000000000000040d9000000f0501631
 with MSBit cleared =            1000000000000040d9000000f0501631
 TAG =                           f229e75b2c4c3048fc70f163c9aefe0d
 AAD =                           01
-CT  =                           b4fabbadb27257bbe8b807d5
+CT  =                           b5bea0352fbe77e5dc84aac4
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 020000000000000000000000
+
+TAG' =                          f229e75b2c4c3048fc70f163c9aefe0d
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1657,7 +1744,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000002c4c3048fc70f163c9aefe8d
+                                f229e75b2c4c3048fc70f163c9aefe8d
 
 
 
@@ -1691,8 +1778,17 @@ POLYVAL_xor_NONCE  =            100000000000000023010000f0501631
 with MSBit cleared =            100000000000000023010000f0501631
 TAG =                           cfb5aa16cdd9d39acc5d99b6eee2c6fc
 AAD =                           01
-CT  =                           dce7c7cd4d1060fdc663b9fe8de25385
+CT  =                           86f7d1853ecc302a598c0e054d917a9c
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+
+TAG' =                          cfb5aa16cdd9d39acc5d99b6eee2c6fc
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1711,7 +1807,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000cdd9d39acc5d99b6eee2c6fc
+                                cfb5aa16cdd9d39acc5d99b6eee2c6fc
 
 
 
@@ -1747,9 +1843,19 @@ POLYVAL_xor_NONCE  =            1f00000000000000460200203e78ef5b
 with MSBit cleared =            1f00000000000000460200203e78ef5b
 TAG =                           8df5606f057468e4b38e89736255ad2d
 AAD =                           01
-CT  =                           c6d3098e12ac653520764cbccdb90655
-                                b3d91bf034f7549d5f775fca5d6ad34f
+CT  =                           a58e74cc44de5637d02d800119da54c1
+                                df3f9f8a1930953819a7d8d1d76f10c0
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+                                03000000000000000000000000000000
+
+TAG' =                          8df5606f057468e4b38e89736255ad2d
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1768,8 +1874,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000057468e4b38e89736255adad
-                                01000000057468e4b38e89736255adad
+                                8df5606f057468e4b38e89736255adad
+                                8ef5606f057468e4b38e89736255adad
 
 
 
@@ -1807,10 +1913,21 @@ POLYVAL_xor_NONCE  =            1e000000000000006503c04c63ad386b
 with MSBit cleared =            1e000000000000006503c04c63ad386b
 TAG =                           b52274e14d6111c74edf5d95855256a2
 AAD =                           01
-CT  =                           186abbbe486294281b1514c11c240e6a
-                                4d959a1ac6da46e5b83bbe2d3d37de44
-                                ab009bb885b5c0bf83db80b651c06e74
+CT  =                           9ceaefd1522cc88b1a9dde5f86253b70
+                                309a25c160bb37dc677ed126ce23e7ab
+                                31ea937735d6353af5cf02de8ff5b2ff
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+                                03000000000000000000000000000000
+                                04000000000000000000000000000000
+
+TAG' =                          b52274e14d6111c74edf5d95855256a2
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1829,9 +1946,9 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000004d6111c74edf5d95855256a2
-                                010000004d6111c74edf5d95855256a2
-                                020000004d6111c74edf5d95855256a2
+                                b52274e14d6111c74edf5d95855256a2
+                                b62274e14d6111c74edf5d95855256a2
+                                b72274e14d6111c74edf5d95855256a2
 
 
 
@@ -1871,11 +1988,23 @@ POLYVAL_xor_NONCE  =            18000000000000008c841a01712a376e
 with MSBit cleared =            18000000000000008c841a01712a376e
 TAG =                           668fc00b6b40b4bb0c8d6cdb9730358d
 AAD =                           01
-CT  =                           499ec09c83c2b79cf6b219e6b79ec81c
-                                7c7b572c8a04b322094ec011e7003ded
-                                388627f831ee79bd3df5db27f648125a
-                                fbfe2774388c34bb652b866ca84bdcd8
+CT  =                           457e976e1f62be30a2bfb8d8801b7282
+                                8dd5349701b0f93007bcae4c2daed6fa
+                                d91c3ae1751edaf54abf47bb1f0608dd
+                                2961c86e7860dcb75336be054c1ad6cf
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+                                03000000000000000000000000000000
+                                04000000000000000000000000000000
+                                05000000000000000000000000000000
+
+TAG' =                          668fc00b6b40b4bb0c8d6cdb9730358d
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1894,10 +2023,10 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006b40b4bb0c8d6cdb9730358d
-                                010000006b40b4bb0c8d6cdb9730358d
-                                020000006b40b4bb0c8d6cdb9730358d
-                                030000006b40b4bb0c8d6cdb9730358d
+                                668fc00b6b40b4bb0c8d6cdb9730358d
+                                678fc00b6b40b4bb0c8d6cdb9730358d
+                                688fc00b6b40b4bb0c8d6cdb9730358d
+                                698fc00b6b40b4bb0c8d6cdb9730358d
 
 
 
@@ -1931,8 +2060,17 @@ POLYVAL_xor_NONCE  =            db000000000000c048000000f050f665
 with MSBit cleared =            db000000000000c048000000f050f665
 TAG =                           488346eaebe2d64ffa58e0fa82f8cd43
 AAD =                           010000000000000000000000
-CT  =                           7d5240be
+CT  =                           c2b96956
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000
+
+TAG' =                          488346eaebe2d64ffa58e0fa82f8cd43
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -1951,7 +2089,7 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000ebe2d64ffa58e0fa82f8cdc3
+                                488346eaebe2d64ffa58e0fa82f8cdc3
 
 
 
@@ -1990,9 +2128,19 @@ with MSBit cleared =            0b010000000000c06b01c04c63ad9807
 TAG =                           d010794cfdbbc65ef641b8ccb9c2dda3
 AAD =                           01000000000000000000000000000000
                                 0200
-CT  =                           6d98c309d4f472480c5b1389e83569e5
-                                217ddb9c
+CT  =                           348bf14b0fe2f8a2c3e843429df6276c
+                                c0e5e688
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 03000000000000000000000000000000
+                                04000000
+
+TAG' =                          d010794cfdbbc65ef641b8ccb9c2dda3
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -2011,8 +2159,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000fdbbc65ef641b8ccb9c2dda3
-                                01000000fdbbc65ef641b8ccb9c2dda3
+                                d010794cfdbbc65ef641b8ccb9c2dda3
+                                d110794cfdbbc65ef641b8ccb9c2dda3
 
 
 
@@ -2051,9 +2199,19 @@ with MSBit cleared =            67010000000000600701c04c63add85e
 TAG =                           98e16515942fb8ff9ef108e7ce53a963
 AAD =                           01000000000000000000000000000000
                                 02000000
-CT  =                           4649087685b01b476bd3420f36ca67d3
-                                b18b
+CT  =                           f803a8b63ffa8c44a391c7e4ccc31e61
+                                79d1
 Encryption_Key=                 57d4b7aec8de993e30a6861b61e6ce4e
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 03000000000000000000000000000000
+                                0400
+
+TAG' =                          98e16515942fb8ff9ef108e7ce53a963
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
@@ -2072,8 +2230,8 @@ KEY_SCHEDULE (Encryption_Key)   57d4b7aec8de993e30a6861b61e6ce4e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000942fb8ff9ef108e7ce53a9e3
-                                01000000942fb8ff9ef108e7ce53a9e3
+                                98e16515942fb8ff9ef108e7ce53a9e3
+                                99e16515942fb8ff9ef108e7ce53a9e3
 ]]></artwork>
         </figure>
       </section>
@@ -2109,30 +2267,30 @@ buffer of 0 blocks + LENBLK.
 POLYVAL =                       00000000000000000000000000000000
 POLYVAL_xor_NONCE  =            03000000000000000000000000000000
 with MSBit cleared =            03000000000000000000000000000000
-TAG =                           de1a5fcd85a5217d91d8b349ab9cd224
+TAG =                           9f32298b78fb3a5e42a41f9ec395a8a0
 AAD =
 CT  =
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
@@ -2167,34 +2325,34 @@ buffer of 1 blocks + LENBLK.
 POLYVAL =                       04000000000000809100000000283b1c
 POLYVAL_xor_NONCE  =            07000000000000809100000000283b1c
 with MSBit cleared =            07000000000000809100000000283b1c
-TAG =                           90d1e4ad87f53fbf3eb26c066193fdf3
+TAG =                           ca9daafe8fe6f1f97d5d37780af4d423
 AAD =
-CT  =                           4b0619edd74c6a09
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           403c53d07ec9ff2c
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000087f53fbf3eb26c066193fdf3
+                                ca9daafe8fe6f1f97d5d37780af4d4a3
 
 
 
@@ -2226,34 +2384,34 @@ buffer of 1 blocks + LENBLK.
 POLYVAL =                       0400000000000040d900000000283b1c
 POLYVAL_xor_NONCE  =            0700000000000040d900000000283b1c
 with MSBit cleared =            0700000000000040d900000000283b1c
-TAG =                           a42c36bcd7dd95273c5ded5a5ab0a8fc
+TAG =                           675861642d6f7c42973d470843868600
 AAD =
-CT  =                           ea410b6727fe50357dc2c9f9
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           0a5bcaa698b9cc0bc78383cf
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000d7dd95273c5ded5a5ab0a8fc
+                                675861642d6f7c42973d470843868680
 
 
 
@@ -2285,34 +2443,34 @@ buffer of 1 blocks + LENBLK.
 POLYVAL =                       04000000000000002301000000283b1c
 POLYVAL_xor_NONCE  =            07000000000000002301000000283b1c
 with MSBit cleared =            07000000000000002301000000283b1c
-TAG =                           a86f26245dea30d23ec045223ef5851e
+TAG =                           255656d6213ddf996629d0c9db7c6332
 AAD =
-CT  =                           d5d6c0782d45de97a027156334229387
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           dfde1d2f762281c138f9d6d09203a270
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000005dea30d23ec045223ef5859e
+                                255656d6213ddf996629d0c9db7c63b2
 
 
 
@@ -2346,36 +2504,36 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       010000000000000046020000f0507615
 POLYVAL_xor_NONCE  =            020000000000000046020000f0507615
 with MSBit cleared =            020000000000000046020000f0507615
-TAG =                           ac78c482d3499b26ae97bf353c2c1bdb
+TAG =                           796e2bdd844cff0aac06f4b85a36d66b
 AAD =
-CT  =                           cac82890d7f5a8330fa2f0f03701901a
-                                ed8a98666b42f74cc1887bd18964cf37
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           c680d1f9a3f2807ce9debce4bf670a98
+                                680619480f725d06ed91dbcbad65d07a
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000d3499b26ae97bf353c2c1bdb
-                                01000000d3499b26ae97bf353c2c1bdb
+                                796e2bdd844cff0aac06f4b85a36d6eb
+                                7a6e2bdd844cff0aac06f4b85a36d6eb
 
 
 
@@ -2411,38 +2569,38 @@ buffer of 3 blocks + LENBLK.
 POLYVAL =                       0e00000000000000650300203e788f7f
 POLYVAL_xor_NONCE  =            0d00000000000000650300203e788f7f
 with MSBit cleared =            0d00000000000000650300203e788f7f
-TAG =                           d47a0a762c2dea133c87aea50fb1c1b3
+TAG =                           0457372a01c505a8718751a8f4c07958
 AAD =
-CT  =                           bd562c8f8bbde467149c17a3f316fd2c
-                                8859c748760332d3296a5b233c4059e3
-                                e70a042dfc2b1812f484801a184b23ae
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           f5e1b0e6f6113e5d4a87ff54d0c6994e
+                                d1d702f63a63c9f132a7317bdb085dd8
+                                856fba3e70f5ebe2857de62946bd984b
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000002c2dea133c87aea50fb1c1b3
-                                010000002c2dea133c87aea50fb1c1b3
-                                020000002c2dea133c87aea50fb1c1b3
+                                0457372a01c505a8718751a8f4c079d8
+                                0557372a01c505a8718751a8f4c079d8
+                                0657372a01c505a8718751a8f4c079d8
 
 
 
@@ -2480,40 +2638,40 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       0f000000000000008c04c04c63ad584f
 POLYVAL_xor_NONCE  =            0c000000000000008c04c04c63ad584f
 with MSBit cleared =            0c000000000000008c04c04c63ad584f
-TAG =                           15e4bd316b19caa3a3493a81a3e4153c
+TAG =                           0b188a792d0a940e66f50e37bf7f9810
 AAD =
-CT  =                           d53e727defb0fe560c87f405ab19b1a2
-                                6fd85249324b974564c477b2eb4d4162
-                                943fa821946537d507e0713dcc556075
-                                220130acb5f3daa8dd46ee9af3b36642
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           f32c3b7315f699ee449b3709fbd109fd
+                                c1726c48a8c48c5b19268372bc83919f
+                                9a717c2b7b042d33a75e4d0806c05f63
+                                5ad443dc419749efe8c4dec48f6d4254
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006b19caa3a3493a81a3e415bc
-                                010000006b19caa3a3493a81a3e415bc
-                                020000006b19caa3a3493a81a3e415bc
-                                030000006b19caa3a3493a81a3e415bc
+                                0b188a792d0a940e66f50e37bf7f9890
+                                0c188a792d0a940e66f50e37bf7f9890
+                                0d188a792d0a940e66f50e37bf7f9890
+                                0e188a792d0a940e66f50e37bf7f9890
 
 
 
@@ -2546,34 +2704,34 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       130000000000008091000000f0501631
 POLYVAL_xor_NONCE  =            100000000000008091000000f0501631
 with MSBit cleared =            100000000000008091000000f0501631
-TAG =                           4cac1deb89734986b5f0546c661932e9
+TAG =                           6bc14bd99e1dc3de41371ee4012d84be
 AAD =                           01
-CT  =                           8e5a22875d5d692e
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           7b10160344fec6cb
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000089734986b5f0546c661932e9
+                                6bc14bd99e1dc3de41371ee4012d84be
 
 
 
@@ -2606,34 +2764,34 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       1300000000000040d9000000f0501631
 POLYVAL_xor_NONCE  =            1000000000000040d9000000f0501631
 with MSBit cleared =            1000000000000040d9000000f0501631
-TAG =                           42794bd56cd0b78ebdad8dc2c2c11720
+TAG =                           0707868473db0caa87ea08f1c44352c0
 AAD =                           01
-CT  =                           ed921994f8d27aad941bfb6f
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           75ffe5c8403db5fb479bc58b
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006cd0b78ebdad8dc2c2c117a0
+                                0707868473db0caa87ea08f1c44352c0
 
 
 
@@ -2666,34 +2824,34 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       130000000000000023010000f0501631
 POLYVAL_xor_NONCE  =            100000000000000023010000f0501631
 with MSBit cleared =            100000000000000023010000f0501631
-TAG =                           1e1fb157ee961567ee5a686a3ac66e74
+TAG =                           35c13a7848f4f53530aeff0176344e05
 AAD =                           01
-CT  =                           295cb156a7ccc66c9026829a26b08a92
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           a11196c1e68a743668290f75ed2f3bab
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000ee961567ee5a686a3ac66ef4
+                                35c13a7848f4f53530aeff0176344e85
 
 
 
@@ -2728,36 +2886,36 @@ buffer of 3 blocks + LENBLK.
 POLYVAL =                       1c00000000000000460200203e78ef5b
 POLYVAL_xor_NONCE  =            1f00000000000000460200203e78ef5b
 with MSBit cleared =            1f00000000000000460200203e78ef5b
-TAG =                           c5558db375fc7fb253b477d990435e79
+TAG =                           900c57b053eac0245bb488688b3e0f5e
 AAD =                           01
-CT  =                           b1403a920a945105017054ccd7754e54
-                                7f471b9e42bd847f9ff2a6d5e1f72b92
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           c0a77a0fd04b3e590a924d938167ffe7
+                                659cd00ab7110b191376f8d8204e8f0d
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000075fc7fb253b477d990435ef9
-                                0100000075fc7fb253b477d990435ef9
+                                900c57b053eac0245bb488688b3e0fde
+                                910c57b053eac0245bb488688b3e0fde
 
 
 
@@ -2794,38 +2952,38 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       1d000000000000006503c04c63ad386b
 POLYVAL_xor_NONCE  =            1e000000000000006503c04c63ad386b
 with MSBit cleared =            1e000000000000006503c04c63ad386b
-TAG =                           54538b4b90c4877f29632ec9441d9809
+TAG =                           12b64759e738e2d0cf178cba52a9f1eb
 AAD =                           01
-CT  =                           687c9c5846e8fde28bc1bde37dd15b80
-                                7ab731537d765e93f0d74bcac390ffbd
-                                b71ddb1af7505791ca74e87c697120b8
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           4e5ec0cac887e6fa1473f19c7978eec8
+                                a56c912d7a7505a35f96a41ad89bbf45
+                                2adaebf19add7e50cec3776b97d22e29
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000090c4877f29632ec9441d9889
-                                0100000090c4877f29632ec9441d9889
-                                0200000090c4877f29632ec9441d9889
+                                12b64759e738e2d0cf178cba52a9f1eb
+                                13b64759e738e2d0cf178cba52a9f1eb
+                                14b64759e738e2d0cf178cba52a9f1eb
 
 
 
@@ -2864,40 +3022,40 @@ buffer of 5 blocks + LENBLK.
 POLYVAL =                       1b000000000000008c841a01712a376e
 POLYVAL_xor_NONCE  =            18000000000000008c841a01712a376e
 with MSBit cleared =            18000000000000008c841a01712a376e
-TAG =                           49650717f842d3d193e3cc498e80f2c7
+TAG =                           4df7461010574a2c5a5f8c428c9a05a8
 AAD =                           01
-CT  =                           c17abb9e321814304f3844af4c90cb8e
-                                a89be09bd7a43a05021266c59a31609a
-                                3a2e7edf107c4c83d8370b36e52caca9
-                                de04c10dfd7eac3008852914cd9e900d
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           ed5596b2ac560cace49f593154576284
+                                7608cc1cd4be937778e4bc1542ce749c
+                                ef0de63e87dda60a0d58c39d40698b31
+                                c4bb87167c528a8db89975496c1586c7
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000f842d3d193e3cc498e80f2c7
-                                01000000f842d3d193e3cc498e80f2c7
-                                02000000f842d3d193e3cc498e80f2c7
-                                03000000f842d3d193e3cc498e80f2c7
+                                4df7461010574a2c5a5f8c428c9a05a8
+                                4ef7461010574a2c5a5f8c428c9a05a8
+                                4ff7461010574a2c5a5f8c428c9a05a8
+                                50f7461010574a2c5a5f8c428c9a05a8
 
 
 
@@ -2930,34 +3088,34 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       d8000000000000c048000000f050f665
 POLYVAL_xor_NONCE  =            db000000000000c048000000f050f665
 with MSBit cleared =            db000000000000c048000000f050f665
-TAG =                           0ee2162b829d1b8087a61dec79c2b4dd
+TAG =                           ff5ad2f9cbb36b1237cdbd63afb89d36
 AAD =                           010000000000000000000000
-CT  =                           7f25e1eb
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           7904ab1d
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000829d1b8087a61dec79c2b4dd
+                                ff5ad2f9cbb36b1237cdbd63afb89db6
 
 
 
@@ -2994,37 +3152,37 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       08010000000000c06b01c04c63ad9807
 POLYVAL_xor_NONCE  =            0b010000000000c06b01c04c63ad9807
 with MSBit cleared =            0b010000000000c06b01c04c63ad9807
-TAG =                           07e3ed3f0c192bb05b8de76bba7901aa
+TAG =                           19ff544d26d5f871b697767d0e1b7881
 AAD =                           01000000000000000000000000000000
                                 0200
-CT  =                           4f39b03d1cf9f45d74e756ff1a382004
-                                54b94c28
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           e6daeb5dd348a30936888ae23cc38783
+                                378c7134
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000000c192bb05b8de76bba7901aa
-                                010000000c192bb05b8de76bba7901aa
+                                19ff544d26d5f871b697767d0e1b7881
+                                1aff544d26d5f871b697767d0e1b7881
 
 
 
@@ -3061,37 +3219,37 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       64010000000000600701c04c63add8de
 POLYVAL_xor_NONCE  =            67010000000000600701c04c63add8de
 with MSBit cleared =            67010000000000600701c04c63add85e
-TAG =                           33f0e38bd6fb197ed4f7eaaea861d60b
+TAG =                           474ed2b302caba5f9460075bf577d777
 AAD =                           01000000000000000000000000000000
                                 02000000
-CT  =                           625534f47020a12f11754fbc86ed46cf
-                                41d0
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           1887531c24feb67e83067aa634f4106f
+                                9580
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
-                                c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+KEY_SCHEDULE (Encryption_Key)   01000000000000000000000000000000
+                                00000000000000000000000000000000
+                                63636363636363636363636363636363
+                                fbfbfbfbfbfbfbfbfbfbfbfbfbfbfbfb
+                                6e6c6c6c0d0f0f0f6e6c6c6c0d0f0f0f
+                                2c8d8d8dd77676762c8d8d8dd7767676
+                                525454625f5b5b6d313737013c38380e
+                                c78a8a2610fcfc503c7171ddeb0707ab
+                                9f91368bc0ca6de6f1fd5ae7cdc562e9
+                                7a2c20386ad0dc6856a1adb5bda6aa1e
+                                ab3d44f16bf729179a0a73f057cf1119
+                                21a6a2ec4b767e841dd7d331a071792f
+                                288b5111437c7806d9760bf68eb91aef
+                                38f0003373867eb76e51ad86ce20d4a9
+                                dfc3829a9cbffa9c45c9f16acb70eb85
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000d6fb197ed4f7eaaea861d68b
-                                01000000d6fb197ed4f7eaaea861d68b
+                                474ed2b302caba5f9460075bf577d7f7
+                                484ed2b302caba5f9460075bf577d7f7
 
 
 
@@ -3123,30 +3281,39 @@ buffer of 0 blocks + LENBLK.
 POLYVAL =                       00000000000000000000000000000000
 POLYVAL_xor_NONCE  =            03000000000000000000000000000000
 with MSBit cleared =            03000000000000000000000000000000
-TAG =                           de1a5fcd85a5217d91d8b349ab9cd224
+TAG =                           9f32298b78fb3a5e42a41f9ec395a8a0
 AAD =
 CT  =
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =
+
+TAG' =                          9f32298b78fb3a5e42a41f9ec395a8a0
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
@@ -3181,34 +3348,43 @@ buffer of 1 blocks + LENBLK.
 POLYVAL =                       04000000000000809100000000283b1c
 POLYVAL_xor_NONCE  =            07000000000000809100000000283b1c
 with MSBit cleared =            07000000000000809100000000283b1c
-TAG =                           90d1e4ad87f53fbf3eb26c066193fdf3
+TAG =                           ca9daafe8fe6f1f97d5d37780af4d423
 AAD =
-CT  =                           4b0619edd74c6a09
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           403c53d07ec9ff2c
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 0100000000000000
+
+TAG' =                          ca9daafe8fe6f1f97d5d37780af4d423
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000087f53fbf3eb26c066193fdf3
+                                ca9daafe8fe6f1f97d5d37780af4d4a3
 
 
 
@@ -3240,34 +3416,43 @@ buffer of 1 blocks + LENBLK.
 POLYVAL =                       0400000000000040d900000000283b1c
 POLYVAL_xor_NONCE  =            0700000000000040d900000000283b1c
 with MSBit cleared =            0700000000000040d900000000283b1c
-TAG =                           a42c36bcd7dd95273c5ded5a5ab0a8fc
+TAG =                           675861642d6f7c42973d470843868600
 AAD =
-CT  =                           ea410b6727fe50357dc2c9f9
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           0a5bcaa698b9cc0bc78383cf
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 010000000000000000000000
+
+TAG' =                          675861642d6f7c42973d470843868600
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000d7dd95273c5ded5a5ab0a8fc
+                                675861642d6f7c42973d470843868680
 
 
 
@@ -3299,34 +3484,43 @@ buffer of 1 blocks + LENBLK.
 POLYVAL =                       04000000000000002301000000283b1c
 POLYVAL_xor_NONCE  =            07000000000000002301000000283b1c
 with MSBit cleared =            07000000000000002301000000283b1c
-TAG =                           a86f26245dea30d23ec045223ef5851e
+TAG =                           255656d6213ddf996629d0c9db7c6332
 AAD =
-CT  =                           d5d6c0782d45de97a027156334229387
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           dfde1d2f762281c138f9d6d09203a270
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+
+TAG' =                          255656d6213ddf996629d0c9db7c6332
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000005dea30d23ec045223ef5859e
+                                255656d6213ddf996629d0c9db7c63b2
 
 
 
@@ -3360,36 +3554,46 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       010000000000000046020000f0507615
 POLYVAL_xor_NONCE  =            020000000000000046020000f0507615
 with MSBit cleared =            020000000000000046020000f0507615
-TAG =                           ac78c482d3499b26ae97bf353c2c1bdb
+TAG =                           796e2bdd844cff0aac06f4b85a36d66b
 AAD =
-CT  =                           cac82890d7f5a8330fa2f0f03701901a
-                                ed8a98666b42f74cc1887bd18964cf37
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           c680d1f9a3f2807ce9debce4bf670a98
+                                680619480f725d06ed91dbcbad65d07a
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+                                02000000000000000000000000000000
+
+TAG' =                          796e2bdd844cff0aac06f4b85a36d66b
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000d3499b26ae97bf353c2c1bdb
-                                01000000d3499b26ae97bf353c2c1bdb
+                                796e2bdd844cff0aac06f4b85a36d6eb
+                                7a6e2bdd844cff0aac06f4b85a36d6eb
 
 
 
@@ -3425,38 +3629,49 @@ buffer of 3 blocks + LENBLK.
 POLYVAL =                       0e00000000000000650300203e788f7f
 POLYVAL_xor_NONCE  =            0d00000000000000650300203e788f7f
 with MSBit cleared =            0d00000000000000650300203e788f7f
-TAG =                           d47a0a762c2dea133c87aea50fb1c1b3
+TAG =                           0457372a01c505a8718751a8f4c07958
 AAD =
-CT  =                           bd562c8f8bbde467149c17a3f316fd2c
-                                8859c748760332d3296a5b233c4059e3
-                                e70a042dfc2b1812f484801a184b23ae
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           f5e1b0e6f6113e5d4a87ff54d0c6994e
+                                d1d702f63a63c9f132a7317bdb085dd8
+                                856fba3e70f5ebe2857de62946bd984b
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+                                02000000000000000000000000000000
+                                03000000000000000000000000000000
+
+TAG' =                          0457372a01c505a8718751a8f4c07958
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000002c2dea133c87aea50fb1c1b3
-                                010000002c2dea133c87aea50fb1c1b3
-                                020000002c2dea133c87aea50fb1c1b3
+                                0457372a01c505a8718751a8f4c079d8
+                                0557372a01c505a8718751a8f4c079d8
+                                0657372a01c505a8718751a8f4c079d8
 
 
 
@@ -3494,40 +3709,52 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       0f000000000000008c04c04c63ad584f
 POLYVAL_xor_NONCE  =            0c000000000000008c04c04c63ad584f
 with MSBit cleared =            0c000000000000008c04c04c63ad584f
-TAG =                           15e4bd316b19caa3a3493a81a3e4153c
+TAG =                           0b188a792d0a940e66f50e37bf7f9810
 AAD =
-CT  =                           d53e727defb0fe560c87f405ab19b1a2
-                                6fd85249324b974564c477b2eb4d4162
-                                943fa821946537d507e0713dcc556075
-                                220130acb5f3daa8dd46ee9af3b36642
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           f32c3b7315f699ee449b3709fbd109fd
+                                c1726c48a8c48c5b19268372bc83919f
+                                9a717c2b7b042d33a75e4d0806c05f63
+                                5ad443dc419749efe8c4dec48f6d4254
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 01000000000000000000000000000000
+                                02000000000000000000000000000000
+                                03000000000000000000000000000000
+                                04000000000000000000000000000000
+
+TAG' =                          0b188a792d0a940e66f50e37bf7f9810
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006b19caa3a3493a81a3e415bc
-                                010000006b19caa3a3493a81a3e415bc
-                                020000006b19caa3a3493a81a3e415bc
-                                030000006b19caa3a3493a81a3e415bc
+                                0b188a792d0a940e66f50e37bf7f9890
+                                0c188a792d0a940e66f50e37bf7f9890
+                                0d188a792d0a940e66f50e37bf7f9890
+                                0e188a792d0a940e66f50e37bf7f9890
 
 
 
@@ -3560,34 +3787,43 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       130000000000008091000000f0501631
 POLYVAL_xor_NONCE  =            100000000000008091000000f0501631
 with MSBit cleared =            100000000000008091000000f0501631
-TAG =                           4cac1deb89734986b5f0546c661932e9
+TAG =                           6bc14bd99e1dc3de41371ee4012d84be
 AAD =                           01
-CT  =                           8e5a22875d5d692e
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           7b10160344fec6cb
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 0200000000000000
+
+TAG' =                          6bc14bd99e1dc3de41371ee4012d84be
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000089734986b5f0546c661932e9
+                                6bc14bd99e1dc3de41371ee4012d84be
 
 
 
@@ -3620,34 +3856,43 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       1300000000000040d9000000f0501631
 POLYVAL_xor_NONCE  =            1000000000000040d9000000f0501631
 with MSBit cleared =            1000000000000040d9000000f0501631
-TAG =                           42794bd56cd0b78ebdad8dc2c2c11720
+TAG =                           0707868473db0caa87ea08f1c44352c0
 AAD =                           01
-CT  =                           ed921994f8d27aad941bfb6f
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           75ffe5c8403db5fb479bc58b
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 020000000000000000000000
+
+TAG' =                          0707868473db0caa87ea08f1c44352c0
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000006cd0b78ebdad8dc2c2c117a0
+                                0707868473db0caa87ea08f1c44352c0
 
 
 
@@ -3680,34 +3925,43 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       130000000000000023010000f0501631
 POLYVAL_xor_NONCE  =            100000000000000023010000f0501631
 with MSBit cleared =            100000000000000023010000f0501631
-TAG =                           1e1fb157ee961567ee5a686a3ac66e74
+TAG =                           35c13a7848f4f53530aeff0176344e05
 AAD =                           01
-CT  =                           295cb156a7ccc66c9026829a26b08a92
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           a11196c1e68a743668290f75ed2f3bab
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+
+TAG' =                          35c13a7848f4f53530aeff0176344e05
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000ee961567ee5a686a3ac66ef4
+                                35c13a7848f4f53530aeff0176344e85
 
 
 
@@ -3742,36 +3996,46 @@ buffer of 3 blocks + LENBLK.
 POLYVAL =                       1c00000000000000460200203e78ef5b
 POLYVAL_xor_NONCE  =            1f00000000000000460200203e78ef5b
 with MSBit cleared =            1f00000000000000460200203e78ef5b
-TAG =                           c5558db375fc7fb253b477d990435e79
+TAG =                           900c57b053eac0245bb488688b3e0f5e
 AAD =                           01
-CT  =                           b1403a920a945105017054ccd7754e54
-                                7f471b9e42bd847f9ff2a6d5e1f72b92
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           c0a77a0fd04b3e590a924d938167ffe7
+                                659cd00ab7110b191376f8d8204e8f0d
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+                                03000000000000000000000000000000
+
+TAG' =                          900c57b053eac0245bb488688b3e0f5e
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000075fc7fb253b477d990435ef9
-                                0100000075fc7fb253b477d990435ef9
+                                900c57b053eac0245bb488688b3e0fde
+                                910c57b053eac0245bb488688b3e0fde
 
 
 
@@ -3808,38 +4072,49 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       1d000000000000006503c04c63ad386b
 POLYVAL_xor_NONCE  =            1e000000000000006503c04c63ad386b
 with MSBit cleared =            1e000000000000006503c04c63ad386b
-TAG =                           54538b4b90c4877f29632ec9441d9809
+TAG =                           12b64759e738e2d0cf178cba52a9f1eb
 AAD =                           01
-CT  =                           687c9c5846e8fde28bc1bde37dd15b80
-                                7ab731537d765e93f0d74bcac390ffbd
-                                b71ddb1af7505791ca74e87c697120b8
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           4e5ec0cac887e6fa1473f19c7978eec8
+                                a56c912d7a7505a35f96a41ad89bbf45
+                                2adaebf19add7e50cec3776b97d22e29
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+                                03000000000000000000000000000000
+                                04000000000000000000000000000000
+
+TAG' =                          12b64759e738e2d0cf178cba52a9f1eb
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                0000000090c4877f29632ec9441d9889
-                                0100000090c4877f29632ec9441d9889
-                                0200000090c4877f29632ec9441d9889
+                                12b64759e738e2d0cf178cba52a9f1eb
+                                13b64759e738e2d0cf178cba52a9f1eb
+                                14b64759e738e2d0cf178cba52a9f1eb
 
 
 
@@ -3878,40 +4153,52 @@ buffer of 5 blocks + LENBLK.
 POLYVAL =                       1b000000000000008c841a01712a376e
 POLYVAL_xor_NONCE  =            18000000000000008c841a01712a376e
 with MSBit cleared =            18000000000000008c841a01712a376e
-TAG =                           49650717f842d3d193e3cc498e80f2c7
+TAG =                           4df7461010574a2c5a5f8c428c9a05a8
 AAD =                           01
-CT  =                           c17abb9e321814304f3844af4c90cb8e
-                                a89be09bd7a43a05021266c59a31609a
-                                3a2e7edf107c4c83d8370b36e52caca9
-                                de04c10dfd7eac3008852914cd9e900d
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           ed5596b2ac560cace49f593154576284
+                                7608cc1cd4be937778e4bc1542ce749c
+                                ef0de63e87dda60a0d58c39d40698b31
+                                c4bb87167c528a8db89975496c1586c7
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000000000000000000000000000
+                                03000000000000000000000000000000
+                                04000000000000000000000000000000
+                                05000000000000000000000000000000
+
+TAG' =                          4df7461010574a2c5a5f8c428c9a05a8
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000f842d3d193e3cc498e80f2c7
-                                01000000f842d3d193e3cc498e80f2c7
-                                02000000f842d3d193e3cc498e80f2c7
-                                03000000f842d3d193e3cc498e80f2c7
+                                4df7461010574a2c5a5f8c428c9a05a8
+                                4ef7461010574a2c5a5f8c428c9a05a8
+                                4ff7461010574a2c5a5f8c428c9a05a8
+                                50f7461010574a2c5a5f8c428c9a05a8
 
 
 
@@ -3944,34 +4231,43 @@ buffer of 2 blocks + LENBLK.
 POLYVAL =                       d8000000000000c048000000f050f665
 POLYVAL_xor_NONCE  =            db000000000000c048000000f050f665
 with MSBit cleared =            db000000000000c048000000f050f665
-TAG =                           0ee2162b829d1b8087a61dec79c2b4dd
+TAG =                           ff5ad2f9cbb36b1237cdbd63afb89d36
 AAD =                           010000000000000000000000
-CT  =                           7f25e1eb
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           7904ab1d
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 02000000
+
+TAG' =                          ff5ad2f9cbb36b1237cdbd63afb89d36
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000829d1b8087a61dec79c2b4dd
+                                ff5ad2f9cbb36b1237cdbd63afb89db6
 
 
 
@@ -4008,37 +4304,47 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       08010000000000c06b01c04c63ad9807
 POLYVAL_xor_NONCE  =            0b010000000000c06b01c04c63ad9807
 with MSBit cleared =            0b010000000000c06b01c04c63ad9807
-TAG =                           07e3ed3f0c192bb05b8de76bba7901aa
+TAG =                           19ff544d26d5f871b697767d0e1b7881
 AAD =                           01000000000000000000000000000000
                                 0200
-CT  =                           4f39b03d1cf9f45d74e756ff1a382004
-                                54b94c28
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           e6daeb5dd348a30936888ae23cc38783
+                                378c7134
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 03000000000000000000000000000000
+                                04000000
+
+TAG' =                          19ff544d26d5f871b697767d0e1b7881
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                000000000c192bb05b8de76bba7901aa
-                                010000000c192bb05b8de76bba7901aa
+                                19ff544d26d5f871b697767d0e1b7881
+                                1aff544d26d5f871b697767d0e1b7881
 
 
 
@@ -4075,37 +4381,47 @@ buffer of 4 blocks + LENBLK.
 POLYVAL =                       64010000000000600701c04c63add8de
 POLYVAL_xor_NONCE  =            67010000000000600701c04c63add8de
 with MSBit cleared =            67010000000000600701c04c63add85e
-TAG =                           33f0e38bd6fb197ed4f7eaaea861d60b
+TAG =                           474ed2b302caba5f9460075bf577d777
 AAD =                           01000000000000000000000000000000
                                 02000000
-CT  =                           625534f47020a12f11754fbc86ed46cf
-                                41d0
-Encryption_Key =                d77cdb05a40231d52ec7ef3b115a4259
+CT  =                           1887531c24feb67e83067aa634f4106f
+                                9580
+Encryption_Key =                5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
+
+Performing Decryption and
+Authentication:
+
+Decrypted MSG =                 03000000000000000000000000000000
+                                0400
+
+TAG' =                          474ed2b302caba5f9460075bf577d777
+
+TAG comparison PASSED!!!
 
 ***************************
          APPENDIX
 ***************************
-KEY_SCHEDULE (Encryption_Key)   d77cdb05a40231d52ec7ef3b115a4259
+KEY_SCHEDULE (Encryption_Key)   5f377914db056de594bd23b0f07076be
                                 c88735cffb99fd5cd4c805dcf487f5ae
-                                c19a3fba65980e6f4b5fe1545a05a30d
-                                76ec3f188d75c24459bdc798ad3a3236
-                                43b93a2f262134406d7ed514377b7619
-                                eccd07cc61b8c58838050210953f3026
-                                32bdcd05149cf94579e22c514e995a48
-                                c323b99ea29b7c169a9e7e060fa14e20
-                                08927a731c0e833665ecaf672b75f52f
-                                32be5f8b9025239d0abb5d9b051a13bb
-                                baef9018a6e1132ec30dbc49e8784966
-                                a90264b839274725339c1abe36860905
-                                deeefb1d780fe833bb02547a537a1d1c
-                                44d8c0247dff87014e639dbf78e594ba
-                                47cc0fa13fc3e79284c1b3e8d7bbaef4
+                                49d19dab92d4f04e0669d3fef619a540
+                                8a5333c671cace9aa502cb4651853ee8
+                                dc63067a4eb7f63448de25cabec7808a
+                                2495feb8555f3022f05dfb64a1d8c58c
+                                b9c56248f772947cbfacb1b6016b313c
+                                58ea39530db50971fde8f2155c303799
+                                b55f8c02422d187efd81a9c8fcea98f4
+                                e86d7fece5d8769d183084884400b311
+                                c6320e19841f1667799ebfaf8574275b
+                                7fffb3d59a27c548821741c0c617f2d1
+                                16bb30ad92a426caeb3a99656e4ebe3e
+                                e0d01d677af7d82ff8e099ef3ef76b3e
+                                3ec4821fac60a4d5475a3db02914838e
 
 CTRBLKS (with MSbit set to 1)
 
-                                00000000d6fb197ed4f7eaaea861d68b
-                                01000000d6fb197ed4f7eaaea861d68b
+                                474ed2b302caba5f9460075bf577d7f7
+                                484ed2b302caba5f9460075bf577d7f7
 ]]></artwork>
         </figure>
       </section>

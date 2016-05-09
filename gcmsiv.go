@@ -216,11 +216,8 @@ func (ctx *GCMSIV) deriveRecordEncryptionKey(nonce []byte) cipher.Block {
 	copy(nonceCopy[:], nonce)
 
 	var recordKey [32]byte
-	nonceCopy[0] &= 0xfe
-	ctx.block.Encrypt(recordKey[:], nonceCopy[:])
-
-	nonceCopy[0] |= 1
 	ctx.block.Encrypt(recordKey[16:], nonceCopy[:])
+	ctx.block.Encrypt(recordKey[:16], recordKey[16:])
 
 	block, _ := aes.NewCipher(recordKey[:])
 	return block
@@ -258,7 +255,7 @@ func cryptBytes(dst, src, initCtr []byte, block cipher.Block) []byte {
 	copy(ctrBlock[:], initCtr)
 	ctrBlock[15] |= 0x80
 
-	for ctr := uint32(0); len(src) > 0; ctr += 1 {
+	for ctr := binary.LittleEndian.Uint32(ctrBlock[:]); len(src) > 0; ctr += 1 {
 		binary.LittleEndian.PutUint32(ctrBlock[:], ctr)
 		block.Encrypt(keystreamBlock[:], ctrBlock[:])
 

@@ -66,14 +66,14 @@ func TestHelloWorld(t *testing.T) {
 	}
 
 	ciphertext := gcmsiv.Seal(nil, nonce, plaintext, ad)
-	const expected = "fb6e7581f4802a46c4c2a88e2d69ed54c0997cae05d8b2be1d963e"
+	const expected = "a7a62dd84fddd34a7e4d8c8e2d69ed54c0997cae05d8b2be1d963e"
 	if hexCiphertext := hex.EncodeToString(ciphertext); hexCiphertext != expected {
 		t.Errorf("got %s, wanted %s", hexCiphertext, expected)
 	}
 }
 
 func TestAgainstVectors128(t *testing.T) {
-	in, err := os.Open("output_2keys_be.txt")
+	in, err := os.Open("output_add_info_be128.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestAgainstVectors128(t *testing.T) {
 }
 
 func TestAgainstVectors256(t *testing.T) {
-	in, err := os.Open("output_2keys_256_be.txt")
+	in, err := os.Open("output_add_info_be256.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
