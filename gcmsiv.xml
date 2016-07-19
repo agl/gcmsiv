@@ -79,7 +79,7 @@
 
       <t>Nonce misuse-resistant AEADs do not suffer from this problem. For this class of AEADs, encrypting two messages with the same nonce only discloses whether the messages were equal or not. This is the minimum amount of information that a deterministic algorithm can leak in this situation.</t>
 
-      <t>This memo specifies two nonce misuse-resistant AEADs: <spanx style="verb">AEAD_AES_128_GCM_SIV</spanx> and <spanx style="verb">AEAD_AES_256_GCM_SIV</spanx>. These AEADs are designed to be able to take advantage of existing hardware support for AES-GCM and can run within 5% of the speed of AES-GCM.</t>
+      <t>This memo specifies two nonce misuse-resistant AEADs: <spanx style="verb">AEAD_AES_128_GCM_SIV</spanx> and <spanx style="verb">AEAD_AES_256_GCM_SIV</spanx>. These AEADs are designed to be able to take advantage of existing hardware support for AES-GCM and can decrypt within 5% of the speed of AES-GCM. Encryption is, perforce, slower than AES-GCM because two passes are required. However, measurements suggest that it can still run at 2/3rds of the speed of AES-GCM.</t>
 
       <t>We suggest that these AEADs be considered in any situation where there is the slightest doubt about nonce uniqueness.</t>
     </section>
