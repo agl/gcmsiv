@@ -165,7 +165,7 @@ if len(AES-key) == 16 {
 
       <t>The length block contains the encoding of the bit-lengths of the additional data and plaintext, respectively, which are and 56 and 88. Thus length_block is 38000000000000005800000000000000.</t>
 
-      <t>The input to POLYVAL is the padded additional data, padded plaintext and then the length block. This is 6578616d706c6500000000000000000048656c6c6f20776f726c64000000000058000000000000003800000000000000.</t>
+      <t>The input to POLYVAL is the padded additional data, padded plaintext and then the length block. This is 6578616d706c6500000000000000000048656c6c6f20776f726c64000000000038000000000000005800000000000000.</t>
 
       <t>The POLYVAL key will be the first 16 bytes of the AEAD key, namely 4f2229294acbdf99c4584ec0e6e23638. Calling POLYVAL with that key and the input above results in S_s = 0b9ae2c5bd7fe4dcd17a007d11ac280e. XORing this with the nonce gives 7eb058165dd05128e5a6436de6b3152f.</t>
 
