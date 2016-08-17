@@ -57,7 +57,7 @@ func TestPolyval(t *testing.T) {
 func TestHelloWorld(t *testing.T) {
 	plaintext := []byte("Hello world")
 	ad := []byte("example")
-	key, _ := hex.DecodeString("4f2229294acbdf99c4584ec0e6e23638fab3a110b8ae672eba07d91ba52d6cea")
+	key, _ := hex.DecodeString("ee8e1ed9ff2540ae8f2ba9f50bc2f27c")
 	nonce, _ := hex.DecodeString("752abad3e0afb5f434dc4310f71f3d21")
 
 	gcmsiv, err := NewGCMSIV(key)
@@ -66,7 +66,7 @@ func TestHelloWorld(t *testing.T) {
 	}
 
 	ciphertext := gcmsiv.Seal(nil, nonce, plaintext, ad)
-	const expected = "a7a62dd84fddd34a7e4d8c8e2d69ed54c0997cae05d8b2be1d963e"
+	const expected = "8978ec2e3d814af742651152d116b648153fe824f3e63ead0c03a4"
 	if hexCiphertext := hex.EncodeToString(ciphertext); hexCiphertext != expected {
 		t.Errorf("got %s, wanted %s", hexCiphertext, expected)
 	}
@@ -93,10 +93,13 @@ func TestAgainstVectors256(t *testing.T) {
 }
 
 func doTest(t *testing.T, testNum int, values map[string][]byte) {
-	var key []byte
-
-	key = append(key, values["K1"]...)
-	key = append(key, values["K2"]...)
+	key, foundKey := values["K"]
+	if !foundKey {
+		key, foundKey = values["K1"]
+	}
+	if !foundKey {
+		t.Fatalf("#%d: no key", testNum)
+	}
 
 	gcmsiv, err := NewGCMSIV(key)
 	if err != nil {
@@ -185,5 +188,9 @@ func processTestVectors(t *testing.T, doTest func(t *testing.T, testNum int, val
 
 	if err := scanner.Err(); err != nil {
 		t.Fatal(err)
+	}
+
+	if values != nil {
+		doTest(t, testNum, values)
 	}
 }

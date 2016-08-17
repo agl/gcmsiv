@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // fieldElement represents a binary polynomial. The elements are in
@@ -176,24 +177,23 @@ func NewGCMSIV(key []byte) (*GCMSIV, error) {
 	is256Bit := false
 
 	switch len(key) {
-	case 48:
+	case 32:
 		is256Bit = true
 		fallthrough
 
-	case 32:
-		if block, err = aes.NewCipher(key[16:]); err != nil {
+	case 16:
+		if block, err = aes.NewCipher(key); err != nil {
 			return nil, err
 		}
 
 	default:
-		return nil, errors.New("gcmsiv: bad key length")
+		return nil, errors.New("gcmsiv: bad key length: " + strconv.Itoa(len(key)))
 	}
 
 	ret := &GCMSIV{
 		block:    block,
 		is256Bit: is256Bit,
 	}
-	copy(ret.hBytes[:], key[:16])
 
 	return ret, nil
 }
@@ -204,26 +204,27 @@ func appendU64(a []byte, val int) []byte {
 	return append(a, valBytes[:]...)
 }
 
-func (ctx *GCMSIV) deriveRecordEncryptionKey(nonce []byte) cipher.Block {
-	if !ctx.is256Bit {
-		var recordKey [16]byte
-		ctx.block.Encrypt(recordKey[:], nonce)
-		block, _ := aes.NewCipher(recordKey[:])
-		return block
+func (ctx *GCMSIV) deriveRecordKeys(nonce []byte) (block cipher.Block, hashKey [16]byte) {
+	var cryptKey [32]byte
+	ctx.block.Encrypt(hashKey[:], nonce)
+	ctx.block.Encrypt(cryptKey[16:], hashKey[:])
+
+	var err error
+	if ctx.is256Bit {
+		ctx.block.Encrypt(cryptKey[:16], cryptKey[16:])
+		block, err = aes.NewCipher(cryptKey[:])
+	} else {
+		block, err = aes.NewCipher(cryptKey[16:])
 	}
 
-	var nonceCopy [16]byte
-	copy(nonceCopy[:], nonce)
+	if err != nil {
+		panic(err)
+	}
 
-	var recordKey [32]byte
-	ctx.block.Encrypt(recordKey[16:], nonceCopy[:])
-	ctx.block.Encrypt(recordKey[:16], recordKey[16:])
-
-	block, _ := aes.NewCipher(recordKey[:])
-	return block
+	return block, hashKey
 }
 
-func (ctx *GCMSIV) calculateTag(additionalData, plaintext []byte, nonce []byte, block cipher.Block) [16]byte {
+func calculateTag(additionalData, plaintext []byte, nonce []byte, hashKey [16]byte, block cipher.Block) [16]byte {
 	input := make([]byte, 0, len(additionalData)+len(plaintext)+48)
 
 	input = append(input, additionalData...)
@@ -239,7 +240,7 @@ func (ctx *GCMSIV) calculateTag(additionalData, plaintext []byte, nonce []byte, 
 	input = appendU64(input, len(additionalData)*8)
 	input = appendU64(input, len(plaintext)*8)
 
-	S_s := polyval(ctx.hBytes, input)
+	S_s := polyval(hashKey, input)
 	for i := range S_s {
 		S_s[i] ^= nonce[i]
 	}
@@ -283,8 +284,8 @@ func (ctx *GCMSIV) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 		panic("gcmsiv: additional data too large")
 	}
 
-	block := ctx.deriveRecordEncryptionKey(nonce)
-	tag := ctx.calculateTag(additionalData, plaintext, nonce, block)
+	block, hashKey := ctx.deriveRecordKeys(nonce)
+	tag := calculateTag(additionalData, plaintext, nonce, hashKey, block)
 	dst = cryptBytes(dst, plaintext, tag[:], block)
 	return append(dst, tag[:]...)
 }
@@ -302,9 +303,9 @@ func (ctx GCMSIV) Open(dst, nonce, ciphertext, additionalData []byte) (out []byt
 	ciphertext = ciphertext[:len(ciphertext)-16]
 
 	initialDstLen := len(dst)
-	block := ctx.deriveRecordEncryptionKey(nonce)
+	block, hashKey := ctx.deriveRecordKeys(nonce)
 	dst = cryptBytes(dst, ciphertext, tag, block)
-	calculatedTag := ctx.calculateTag(additionalData, dst[initialDstLen:], nonce, block)
+	calculatedTag := calculateTag(additionalData, dst[initialDstLen:], nonce, hashKey, block)
 	if subtle.ConstantTimeCompare(calculatedTag[:], tag) != 1 {
 		return nil, errors.New("gcmsiv: decryption failure")
 	}
