@@ -190,6 +190,10 @@ if len(key-generating-key) == 16 {
 
       <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. Thus, with a fixed nonce, the 2^32 limit still applies as the number of distinct messages that can be encrypted under a given key. Nonces should be unique and the misuse-resistance of these AEADs should not be depended on to the extent that 2^32 duplicates may occur.</t>
 
+      <t>In additional to calculating fresh AES keys for each nonce, these AEADs also calculate fresh POLYVAL keys. Previous versions of GCM-SIV did not do this and, instead, used part of the AEAD's key as the POLYVAL key. Bleichenbacher pointed out that this allowed an attacker who controlled the AEAD key to force the POLYVAL key to be zero. If a user of this AEAD authenticated messages with a secret additional-data value then this would be insecure as the attacker could calculate a valid authenticator without knowing the input.</t>
+
+      <t>This does not violate the standard properties of an AEAD as the additional data is not assumed to be confidential. However, we want these AEADs to be robust to plausible misuse and also to be drop-in replacements for AES-GCM and so derive nonce-specific POLYVAL keys to avoid this issue.</t>
+
       <t>A security analysis of a similar scheme appears in <xref target="GCM-SIV"/>.</t>
     </section>
 
@@ -198,7 +202,7 @@ if len(key-generating-key) == 16 {
     </section>
 
     <section title="Acknowledgements">
-      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnáček and Daniel Bleichenbacher for their helpful suggestions.</t>
+      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnáček, Daniel Bleichenbacher, Kenny Paterson and Bart Preneel for their helpful suggestions.</t>
     </section>
   </middle>
 
