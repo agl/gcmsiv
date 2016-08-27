@@ -66,7 +66,7 @@ func TestHelloWorld(t *testing.T) {
 	}
 
 	ciphertext := gcmsiv.Seal(nil, nonce, plaintext, ad)
-	const expected = "8978ec2e3d814af742651152d116b648153fe824f3e63ead0c03a4"
+	const expected = "810649724764545b3625ff010a10f4942710781d2948ac0192572f"
 	if hexCiphertext := hex.EncodeToString(ciphertext); hexCiphertext != expected {
 		t.Errorf("got %s, wanted %s", hexCiphertext, expected)
 	}

@@ -241,10 +241,6 @@ func calculateTag(additionalData, plaintext []byte, nonce []byte, hashKey [16]by
 	input = appendU64(input, len(plaintext)*8)
 
 	S_s := polyval(hashKey, input)
-	for i := range S_s {
-		S_s[i] ^= nonce[i]
-	}
-
 	S_s[15] &= 0x7f
 	block.Encrypt(S_s[:], S_s[:])
 
