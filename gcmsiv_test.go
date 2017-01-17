@@ -58,7 +58,7 @@ func TestHelloWorld(t *testing.T) {
 	plaintext := []byte("Hello world")
 	ad := []byte("example")
 	key, _ := hex.DecodeString("ee8e1ed9ff2540ae8f2ba9f50bc2f27c")
-	nonce, _ := hex.DecodeString("752abad3e0afb5f434dc4310f71f3d21")
+	nonce, _ := hex.DecodeString("752abad3e0afb5f434dc4310")
 
 	gcmsiv, err := NewGCMSIV(key)
 	if err != nil {
@@ -93,12 +93,9 @@ func TestAgainstVectors256(t *testing.T) {
 }
 
 func doTest(t *testing.T, testNum int, values map[string][]byte) {
-	key, foundKey := values["K"]
+	key, foundKey := values["K1"]
 	if !foundKey {
-		key, foundKey = values["K1"]
-	}
-	if !foundKey {
-		t.Fatalf("#%d: no key", testNum)
+		t.Fatalf("#%d: no key %#v", testNum, values)
 	}
 
 	gcmsiv, err := NewGCMSIV(key)
@@ -118,7 +115,7 @@ func doTest(t *testing.T, testNum int, values map[string][]byte) {
 		t.Errorf("#%d: got tag %x, but expected %x", testNum, tag, expectedTag)
 	}
 
-	if expectedCiphertext := values["CT"]; !bytes.Equal(ct, expectedCiphertext) {
+	if expectedCiphertext := values["CIPHERTEXT"]; !bytes.Equal(ct, expectedCiphertext) {
 		t.Errorf("#%d: got ciphertext %x, but expected %x", testNum, ciphertext, expectedCiphertext)
 	}
 
@@ -144,9 +141,9 @@ func processTestVectors(t *testing.T, doTest func(t *testing.T, testNum int, val
 			continue
 		}
 
-		if strings.HasPrefix(line, "-----") {
+		if strings.HasPrefix(line, "*****") {
 			lastKey = ""
-			if values != nil {
+			if values != nil && len(values) > 0 {
 				doTest(t, testNum, values)
 			}
 

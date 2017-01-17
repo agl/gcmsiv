@@ -10,6 +10,8 @@ import (
 	"strconv"
 )
 
+const verbose = false
+
 // fieldElement represents a binary polynomial. The elements are in
 // little-endian order, i.e the polynomial 'x' would be {1, 0, 0, 0}.
 type fieldElement [4]uint64
@@ -205,16 +207,38 @@ func appendU64(a []byte, val int) []byte {
 }
 
 func (ctx *GCMSIV) deriveRecordKeys(nonce []byte) (block cipher.Block, hashKey [16]byte) {
-	var cryptKey [32]byte
-	ctx.block.Encrypt(hashKey[:], nonce)
-	ctx.block.Encrypt(cryptKey[16:], hashKey[:])
+	var counter [16]byte
+	copy(counter[4:], nonce)
+
+	var ciphertextBlocks [16 * 6]byte
+	numBlocks := 4
+	if ctx.is256Bit {
+		numBlocks = 6
+	}
+
+	for j := 0; j < numBlocks; j++ {
+		counter[0] = byte(j)
+		ctx.block.Encrypt(ciphertextBlocks[16*j:], counter[:])
+	}
+
+	copy(hashKey[:], ciphertextBlocks[:8])
+	copy(hashKey[8:], ciphertextBlocks[1*16:1*16+8])
+
+	if verbose {
+		fmt.Printf("hash key %x\n", hashKey)
+	}
+
+	var encryptionKey [32]byte
+	copy(encryptionKey[:], ciphertextBlocks[2*16:2*16+8])
+	copy(encryptionKey[8:], ciphertextBlocks[3*16:3*16+8])
 
 	var err error
 	if ctx.is256Bit {
-		ctx.block.Encrypt(cryptKey[:16], cryptKey[16:])
-		block, err = aes.NewCipher(cryptKey[:])
+		copy(encryptionKey[16:], ciphertextBlocks[4*16:4*16+8])
+		copy(encryptionKey[24:], ciphertextBlocks[5*16:5*16+8])
+		block, err = aes.NewCipher(encryptionKey[:])
 	} else {
-		block, err = aes.NewCipher(cryptKey[16:])
+		block, err = aes.NewCipher(encryptionKey[:16])
 	}
 
 	if err != nil {
@@ -241,8 +265,23 @@ func calculateTag(additionalData, plaintext []byte, nonce []byte, hashKey [16]by
 	input = appendU64(input, len(plaintext)*8)
 
 	S_s := polyval(hashKey, input)
+	if verbose {
+		fmt.Printf("S_s = %x\n", S_s)
+	}
+	for i, b := range nonce {
+		S_s[i] ^= b
+	}
+	if verbose {
+		fmt.Printf("S_s after XOR = %x\n", S_s)
+	}
 	S_s[15] &= 0x7f
+	if verbose {
+		fmt.Printf("S_s after mask = %x\n", S_s)
+	}
 	block.Encrypt(S_s[:], S_s[:])
+	if verbose {
+		fmt.Printf("S_s after enc = %x\n", S_s)
+	}
 
 	return S_s
 }
@@ -255,6 +294,10 @@ func cryptBytes(dst, src, initCtr []byte, block cipher.Block) []byte {
 	for ctr := binary.LittleEndian.Uint32(ctrBlock[:]); len(src) > 0; ctr += 1 {
 		binary.LittleEndian.PutUint32(ctrBlock[:], ctr)
 		block.Encrypt(keystreamBlock[:], ctrBlock[:])
+		if verbose {
+			fmt.Printf("ctr: %x\n", ctrBlock)
+			fmt.Printf("keystream: %x\n", keystreamBlock)
+		}
 
 		plaintextBlock := src
 
