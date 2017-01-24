@@ -333,6 +333,8 @@ Counter |       Nonce                         Ciphertext
       <t>Defined similarly, AES-GCM-SIV with AES-128 requires p + 5 AES operations and p + a + 1 field multiplications. With AES-256 that becomes p + 7 AES operations.</t>
 
       <t>With large machines, the available parallelism becomes far more important and such simple performance analysis is no longer representative. For such machines, we find that decryption of AES-GCM-SIV is only about 5% slower then AES-GCM, as long as the message is at least a couple of kilobytes. Encryption tends to be about 2/3's the speed because of the additional pass required.</t>
+
+      <t>(TODO: John Mattsson mentions the one-time auth keys helps against recovery, but can we say anything without talking about truncation.)</t>
     </section>
 
     <section title="Test vectors">
