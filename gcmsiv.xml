@@ -11,7 +11,7 @@
 <?rfc sortrefs="yes" ?>
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
-<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-03" ipr="trust200902">
+<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-04" ipr="trust200902">
   <front>
     <title abbrev="aes-gcm-siv">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
@@ -55,7 +55,7 @@
       </address>
     </author>
 
-    <date month="January" year="2017" />
+    <date month="February" year="2017" />
 
     <area>General</area>
     <workgroup>CFRG</workgroup>
@@ -211,6 +211,8 @@ Counter |       Nonce                         Ciphertext
     </section>
 
     <section title="Security Considerations" anchor="seccon">
+      <t>A detailed analysis of these schemes appears in <xref target="AES-GCM-SIV"/> and the remainder of this section is a summary of that paper.</t>
+
       <t>We recommend a limit of 2^50 plaintexts encrypted with a given key. Past this point, AES-GCM-SIV may be distinguishable from an ideal AEAD. (This is based on standard assumptions about AES.)</t>
 
       <t>The AEADs defined in this document calculate fresh AES keys for each nonce. This allows a larger number of plaintexts to be encrypted under a given key. Without this step, each SIV encryption would be like a standard GCM encryption with a random nonce. Since the nonce size for GCM is only 12 bytes, NIST set a limit <xref target="GCM"/> of 2^32 encryptions before the probability of duplicate nonces becomes too high.</t>
@@ -219,7 +221,7 @@ Counter |       Nonce                         Ciphertext
 
       <t>Deriving fresh AES keys for each nonce alleviates this problem.</t>
 
-      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. However, we feel that the 2^32 limit for AES-GCM is too risky in a multi-key setting. Thus with AES-GCM-SIV we recommend that, for a specific key, a nonce not be repeated more than 2^8 times. (And, ideally, not be repeated at all.)</t>
+      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. However, we feel that the 2^32 limit for AES-GCM is too risky in a multi-key setting. Thus with AES-GCM-SIV we recommend that, for a specific key, a nonce not be repeated more than 2^8 times. (And, ideally, not be repeated at all.) See corollary 8 and figure 4 from the paper for detailed bounds.</t>
 
       <t>Suzuki et al <xref target="multibirthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV.</t>
 
@@ -256,6 +258,24 @@ Counter |       Nonce                         Ciphertext
           <date year="2007" month="November"/>
         </front>
         <seriesInfo name="NIST" value="SP-800-38D"/>
+      </reference>
+
+      <reference anchor="AES-GCM-SIV" target="https://eprint.iacr.org/2017/168">
+        <front>
+          <title>
+            AES-GCM-SIV: specification and analysis
+          </title>
+          <author initials="S." surname="Gueron" fullname="Shay Gueron">
+            <organization/>
+          </author>
+          <author initials="A." surname="Langley" fullname="Adam Langley">
+            <organization/>
+          </author>
+          <author initials="Y." surname="Lindell" fullname="Yehuda Lindell">
+            <organization/>
+          </author>
+          <date year="2017"/>
+        </front>
       </reference>
 
       <reference anchor="GCM-SIV" target="http://doi.acm.org/10.1145/2810103.2813613">
@@ -321,8 +341,8 @@ Counter |       Nonce                         Ciphertext
       <t>In the other direction, GHASH(H, X_1, X_2) = bd9b3997046731fb96251b91f9c99d7a. If we wished to calculate this given only an implementation of POLYVAL then we would first calculate the key for POLYVAL, mulX_POLYVAL(ByteReverse(H)), which is f6ea96744df0633aec8424b18e26c54a. Then ByteReverse(POLYVAL(f6ea..., ByteReverse(X_1), ByteReverse(X_2))) = bd9b3997046731fb96251b91f9c99d7a.</t>
     </section>
 
-    <section anchor="ghash" title="Additional comparisons with AES-GCM">
-      <t>Some, non-security, properties also differ between AES-GCM and AES-GCM-SIV which are worth noting:</t>
+    <section anchor="aesgcm" title="Additional comparisons with AES-GCM">
+      <t>Some, non-security, properties also differ between AES-GCM and AES-GCM-SIV that are worth noting:</t>
 
       <t>AES-GCM allows plaintexts to be encrypted in a streaming fashion, i.e. the beginning of the plaintext can be encrypted and transmitted before the entire message has been processed. AES-GCM-SIV requires two passes for encryption and so cannot do this.</t>
 
@@ -333,8 +353,6 @@ Counter |       Nonce                         Ciphertext
       <t>Defined similarly, AES-GCM-SIV with AES-128 requires p + 5 AES operations and p + a + 1 field multiplications. With AES-256 that becomes p + 7 AES operations.</t>
 
       <t>With large machines, the available parallelism becomes far more important and such simple performance analysis is no longer representative. For such machines, we find that decryption of AES-GCM-SIV is only about 5% slower then AES-GCM, as long as the message is at least a couple of kilobytes. Encryption tends to be about 2/3's the speed because of the additional pass required.</t>
-
-      <t>(TODO: John Mattsson mentions the one-time auth keys helps against recovery, but can we say anything without talking about truncation.)</t>
     </section>
 
     <section title="Test vectors">
