@@ -3,6 +3,7 @@ package gcmsiv
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -190,4 +191,27 @@ func processTestVectors(t *testing.T, doTest func(t *testing.T, testNum int, val
 	if values != nil {
 		doTest(t, testNum, values)
 	}
+}
+
+func disabledTest1K(t *testing.T) {
+	key := make([]byte, 16)
+	rand.Reader.Read(key)
+	nonce := make([]byte, 12)
+	rand.Reader.Read(nonce)
+	msg := make([]byte, 1024)
+	rand.Reader.Read(msg)
+	ad := make([]byte, 256)
+	rand.Reader.Read(ad)
+
+	gcmsiv, _ := NewGCMSIV(key)
+	ciphertext := gcmsiv.Seal(nil, nonce, msg, ad)
+	tag := ciphertext[len(ciphertext)-16:]
+	ct := ciphertext[:len(ciphertext)-16]
+
+	fmt.Printf("\nKEY: %x\n", key)
+	fmt.Printf("NONCE: %x\n", nonce[:12])
+	fmt.Printf("IN: %x\n", msg)
+	fmt.Printf("AD: %x\n", ad)
+	fmt.Printf("CT: %x\n", ct)
+	fmt.Printf("TAG: %x\n", tag)
 }
