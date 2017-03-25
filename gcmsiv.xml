@@ -220,7 +220,7 @@ Counter |       Nonce                         Ciphertext
 
       <t>Deriving fresh AES keys for each nonce alleviates this problem.</t>
 
-      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. However, we feel that the 2^32 limit for AES-GCM is too risky in a multi-key setting. Thus with AES-GCM-SIV we recommend that, for a specific key, a nonce not be repeated more than 2^8 times. (And, ideally, not be repeated at all.) See corollary 8 and figure 4 from the paper for detailed bounds.</t>
+      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. However, we feel that the 2^32 limit for AES-GCM is too risky in a multi-key setting. Thus with AES-GCM-SIV we recommend that, for a specific key, a nonce not be repeated more than 2^8 times. (And, ideally, not be repeated at all.) See theorem six and figure four from the paper for detailed bounds.</t>
 
       <t>Suzuki et al <xref target="multibirthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV.</t>
 
