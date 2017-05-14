@@ -8,9 +8,40 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
-const verbose = false
+var verbose = false
+
+func log(msg string, data []byte) {
+	const lineWidth = 60
+	if len(msg)+2+2*16 > lineWidth {
+		panic("cannot log with message " + msg)
+	}
+	fmt.Printf("%s =", msg)
+	if len(data) == 0 {
+		fmt.Printf("\n")
+		return
+	}
+
+	written := len(msg) + 2
+
+	for len(data) > 0 {
+		padding := lineWidth - (written + 2*16)
+		for i := 0; i < padding; i++ {
+			fmt.Printf(" ")
+		}
+
+		todo := data
+		if len(todo) > 16 {
+			todo = todo[:16]
+		}
+		fmt.Printf("%x\n", todo)
+		written = 0
+
+		data = data[len(todo):]
+	}
+}
 
 // fieldElement represents a binary polynomial. The elements are in
 // little-endian order, i.e the polynomial 'x' would be {1, 0, 0, 0}.
@@ -38,6 +69,35 @@ func fieldElementFromBytes(bytes []byte) fieldElement {
 	})
 }
 
+func fieldElementFromSage(varName, in string) fieldElement {
+	var ret fieldElement
+	prefix := varName + "^"
+
+	parts := strings.Split(in, " + ")
+	for _, p := range parts {
+		if p == "1" {
+			ret.set(0)
+			continue
+		}
+		if p == "x" {
+			ret.set(1)
+			continue
+		}
+
+		if !strings.HasPrefix(p, prefix) {
+			panic(fmt.Sprintf("found %q in Sage string, but expected prefix %q", p, prefix))
+		}
+		p = p[len(prefix):]
+		i, err := strconv.Atoi(p)
+		if err != nil {
+			panic(fmt.Sprintf("failed to parse %q in Sage string: %s", p, err))
+		}
+		ret.set(uint(i))
+	}
+
+	return ret
+}
+
 // fitsIn128Bits returns true if the top 128 bits of f are all zero. (And thus
 // the value itself fits in 128 bits.)
 func (f fieldElement) fitsIn128Bits() bool {
@@ -56,6 +116,28 @@ func (f fieldElement) Bytes() (ret [16]byte) {
 	return ret
 }
 
+func (f fieldElement) SageString(varName string) string {
+	if !f.fitsIn128Bits() {
+		panic("unsupported")
+	}
+
+	ret := ""
+	for i := uint(0); i < 128; i++ {
+		if f.coefficient(i) {
+			if len(ret) > 0 {
+				ret += " + "
+			}
+			if i == 0 {
+				ret += "1"
+			} else {
+				ret += varName + "^" + strconv.Itoa(int(i))
+			}
+		}
+	}
+
+	return ret
+}
+
 func (f fieldElement) String() string {
 	if f.fitsIn128Bits() {
 		return fmt.Sprintf("%016x%016x", f[1], f[0])
@@ -68,6 +150,11 @@ func (f fieldElement) String() string {
 // coefficient returns the coefficient of x^i in f.
 func (f fieldElement) coefficient(i uint) bool {
 	return (f[(i/64)]>>(i&63))&1 == 1
+}
+
+// set sets the coefficient of x^i, in f, to 1.
+func (f *fieldElement) set(i uint) {
+	f[(i / 64)] |= 1 << (i & 63)
 }
 
 // leftShift returns f times x^i.
@@ -143,6 +230,14 @@ func polyval(hBytes [16]byte, input []byte) [16]byte {
 	h := fieldElementFromBytes(hBytes[:])
 	var s fieldElement
 
+	powers := h
+	var powersTable [16 * 8]byte
+	for i := 0; i < 8; i++ {
+		bytes := powers.Bytes()
+		copy(powersTable[i*16:], bytes[:])
+		powers = powers.dot(h)
+	}
+
 	for len(input) > 0 {
 		x := fieldElementFromBytes(input[:16])
 		input = input[16:]
@@ -163,6 +258,7 @@ type GCMSIV struct {
 	hBytes   [16]byte
 	block    cipher.Block
 	is256Bit bool
+	key      [32]byte
 }
 
 func (GCMSIV) NonceSize() int {
@@ -196,6 +292,7 @@ func NewGCMSIV(key []byte) (*GCMSIV, error) {
 		block:    block,
 		is256Bit: is256Bit,
 	}
+	copy(ret.key[:], key)
 
 	return ret, nil
 }
@@ -225,7 +322,7 @@ func (ctx *GCMSIV) deriveRecordKeys(nonce []byte) (block cipher.Block, hashKey [
 	copy(hashKey[8:], ciphertextBlocks[1*16:1*16+8])
 
 	if verbose {
-		fmt.Printf("hash key %x\n", hashKey)
+		log("Record authentication key", hashKey[:])
 	}
 
 	var encryptionKey [32]byte
@@ -236,8 +333,14 @@ func (ctx *GCMSIV) deriveRecordKeys(nonce []byte) (block cipher.Block, hashKey [
 	if ctx.is256Bit {
 		copy(encryptionKey[16:], ciphertextBlocks[4*16:4*16+8])
 		copy(encryptionKey[24:], ciphertextBlocks[5*16:5*16+8])
+		if verbose {
+			log("Record encryption key", encryptionKey[:])
+		}
 		block, err = aes.NewCipher(encryptionKey[:])
 	} else {
+		if verbose {
+			log("Record encryption key", encryptionKey[:16])
+		}
 		block, err = aes.NewCipher(encryptionKey[:16])
 	}
 
@@ -264,23 +367,27 @@ func calculateTag(additionalData, plaintext []byte, nonce []byte, hashKey [16]by
 	input = appendU64(input, len(additionalData)*8)
 	input = appendU64(input, len(plaintext)*8)
 
+	if verbose {
+		log("POLYVAL input", input)
+	}
+
 	S_s := polyval(hashKey, input)
 	if verbose {
-		fmt.Printf("S_s = %x\n", S_s)
+		log("POLYVAL result", S_s[:])
 	}
 	for i, b := range nonce {
 		S_s[i] ^= b
 	}
 	if verbose {
-		fmt.Printf("S_s after XOR = %x\n", S_s)
+		log("POLYVAL result XOR nonce", S_s[:])
 	}
 	S_s[15] &= 0x7f
 	if verbose {
-		fmt.Printf("S_s after mask = %x\n", S_s)
+		log("... and masked", S_s[:])
 	}
 	block.Encrypt(S_s[:], S_s[:])
 	if verbose {
-		fmt.Printf("S_s after enc = %x\n", S_s)
+		log("Tag", S_s[:])
 	}
 
 	return S_s
@@ -290,14 +397,13 @@ func cryptBytes(dst, src, initCtr []byte, block cipher.Block) []byte {
 	var ctrBlock, keystreamBlock [16]byte
 	copy(ctrBlock[:], initCtr)
 	ctrBlock[15] |= 0x80
+	if verbose {
+		log("Initial counter", ctrBlock[:])
+	}
 
 	for ctr := binary.LittleEndian.Uint32(ctrBlock[:]); len(src) > 0; ctr += 1 {
 		binary.LittleEndian.PutUint32(ctrBlock[:], ctr)
 		block.Encrypt(keystreamBlock[:], ctrBlock[:])
-		if verbose {
-			fmt.Printf("ctr: %x\n", ctrBlock)
-			fmt.Printf("keystream: %x\n", keystreamBlock)
-		}
 
 		plaintextBlock := src
 
@@ -315,6 +421,20 @@ func cryptBytes(dst, src, initCtr []byte, block cipher.Block) []byte {
 }
 
 func (ctx *GCMSIV) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+	if verbose {
+		log(fmt.Sprintf("Plaintext (%d bytes)", len(plaintext)), plaintext)
+		log(fmt.Sprintf("AAD (%d bytes)", len(additionalData)), additionalData)
+
+		var key []byte
+		if ctx.is256Bit {
+			key = ctx.key[:]
+		} else {
+			key = ctx.key[:16]
+		}
+		log("Key", key)
+		log("Nonce", nonce)
+	}
+
 	if len(plaintext) > maxPlaintextLen {
 		panic("gcmsiv: plaintext too large")
 	}
@@ -326,7 +446,12 @@ func (ctx *GCMSIV) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	block, hashKey := ctx.deriveRecordKeys(nonce)
 	tag := calculateTag(additionalData, plaintext, nonce, hashKey, block)
 	dst = cryptBytes(dst, plaintext, tag[:], block)
-	return append(dst, tag[:]...)
+	dst = append(dst, tag[:]...)
+	if verbose {
+		log(fmt.Sprintf("Result (%d bytes)", len(dst)), dst)
+		fmt.Printf("\n\n")
+	}
+	return dst
 }
 
 func (ctx GCMSIV) Open(dst, nonce, ciphertext, additionalData []byte) (out []byte, err error) {

@@ -3,13 +3,14 @@ package gcmsiv
 import (
 	"bufio"
 	"bytes"
-	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"golang.org/x/crypto/sha3"
 )
 
 func TestToFromBytes(t *testing.T) {
@@ -19,6 +20,41 @@ func TestToFromBytes(t *testing.T) {
 	if result := fieldElementFromBytes(aBytes[:]); result != a {
 		t.Errorf("Converting to/from bytes does not round-trip: got %s, want %s", result, a)
 	}
+}
+
+func TestWrap(t *testing.T) {
+	plaintext := make([]byte, 16*2)
+	key := make([]byte, 32)
+	nonce, _ := hex.DecodeString("000000000000000000000000")
+	const ss = "x^123 + x^119 + x^118 + x^117 + x^112 + x^111 + x^108 + x^107 + x^101 + x^100 + x^99 + x^97 + x^95 + x^94 + x^87 + x^86 + x^84 + x^83 + x^82 + x^78 + x^77 + x^76 + x^74 + x^73 + x^70 + x^69 + x^68 + x^67 + x^66 + x^62 + x^59 + x^56 + x^55 + x^54 + x^53 + x^50 + x^49 + x^45 + x^44 + x^43 + x^42 + x^41 + x^38 + x^37 + x^36 + x^35 + x^32 + x^31 + x^30 + x^28 + x^27 + x^26 + x^21 + x^17 + x^16 + x^15 + x^13 + x^12 + x^11 + x^8 + x^6 + x^3 + x^2 + 1"
+	ssBytes := fieldElementFromSage("x", ss).Bytes()
+	copy(plaintext[16:], ssBytes[:])
+
+	gcmsiv, err := NewGCMSIV(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verbose = true
+	gcmsiv.Seal(nil, nonce, plaintext, nil)
+}
+
+func TestWrapPartialBlock(t *testing.T) {
+	plaintext := make([]byte, 16+8)
+	key := make([]byte, 32)
+	nonce, _ := hex.DecodeString("000000000000000000000000")
+	const ss = "x^126 + x^123 + x^122 + x^117 + x^116 + x^115 + x^114 + x^113 + x^109 + x^107 + x^106 + x^104 + x^103 + x^102 + x^100 + x^94 + x^89 + x^87 + x^85 + x^82 + x^80 + x^79 + x^78 + x^74 + x^73 + x^72 + x^65 + x^64 + x^60 + x^57 + x^56 + x^55 + x^54 + x^53 + x^52 + x^51 + x^50 + x^48 + x^46 + x^45 + x^44 + x^43 + x^42 + x^41 + x^40 + x^38 + x^37 + x^36 + x^35 + x^34 + x^29 + x^26 + x^25 + x^24 + x^22 + x^13 + x^12 + x^10 + x^9 + x^7 + x^6 + x^5 + x^3 + x + 1"
+
+	ssBytes := fieldElementFromSage("x", ss).Bytes()
+	copy(plaintext, ssBytes[:])
+
+	gcmsiv, err := NewGCMSIV(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verbose = true
+	gcmsiv.Seal(nil, nonce, plaintext, nil)
 }
 
 func TestFieldOps(t *testing.T) {
@@ -104,11 +140,13 @@ func doTest(t *testing.T, testNum int, values map[string][]byte) {
 		t.Fatal(err)
 	}
 
-	nonce := values["NONCE"]
+	nonce := values["NONCE"][:12]
 	msg := values["MSG"]
 	ad := values["AAD"]
 
+	verbose = true
 	ciphertext := gcmsiv.Seal(nil, nonce, msg, ad)
+	verbose = false
 	tag := ciphertext[len(ciphertext)-16:]
 	ct := ciphertext[:len(ciphertext)-16]
 
@@ -193,25 +231,31 @@ func processTestVectors(t *testing.T, doTest func(t *testing.T, testNum int, val
 	}
 }
 
-func disabledTest1K(t *testing.T) {
-	key := make([]byte, 16)
-	rand.Reader.Read(key)
-	nonce := make([]byte, 12)
-	rand.Reader.Read(nonce)
-	msg := make([]byte, 1024)
-	rand.Reader.Read(msg)
-	ad := make([]byte, 256)
-	rand.Reader.Read(ad)
+func disabledTestExtraVectors(t *testing.T) {
+	r := sha3.NewShake128()
+	r.Write([]byte("AES-GCM-SIV"))
 
-	gcmsiv, _ := NewGCMSIV(key)
-	ciphertext := gcmsiv.Seal(nil, nonce, msg, ad)
-	tag := ciphertext[len(ciphertext)-16:]
-	ct := ciphertext[:len(ciphertext)-16]
+	const keyLen = 32
+	for l := 0; l < 1024/16; l++ {
+		key := make([]byte, keyLen)
+		r.Read(key)
+		nonce := make([]byte, 12)
+		r.Read(nonce)
+		msg := make([]byte, l*16+l%16)
+		r.Read(msg)
+		ad := make([]byte, l*8+l%8)
+		r.Read(ad)
 
-	fmt.Printf("\nKEY: %x\n", key)
-	fmt.Printf("NONCE: %x\n", nonce[:12])
-	fmt.Printf("IN: %x\n", msg)
-	fmt.Printf("AD: %x\n", ad)
-	fmt.Printf("CT: %x\n", ct)
-	fmt.Printf("TAG: %x\n", tag)
+		gcmsiv, _ := NewGCMSIV(key)
+		ciphertext := gcmsiv.Seal(nil, nonce, msg, ad)
+		tag := ciphertext[len(ciphertext)-16:]
+		ct := ciphertext[:len(ciphertext)-16]
+
+		fmt.Printf("\nKEY: %x\n", key)
+		fmt.Printf("NONCE: %x\n", nonce[:12])
+		fmt.Printf("IN: %x\n", msg)
+		fmt.Printf("AD: %x\n", ad)
+		fmt.Printf("CT: %x\n", ct)
+		fmt.Printf("TAG: %x\n", tag)
+	}
 }
