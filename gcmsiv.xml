@@ -46,7 +46,6 @@
       <organization>Bar Ilan University</organization>
       <address>
         <postal>
-          <street>Bar Ilan University</street>
           <city>Ramat Gan</city>
           <code>5290002</code>
           <country>Israel</country>
@@ -231,11 +230,11 @@ Counter |       Nonce                         Ciphertext
     </section>
 
     <section title="IANA Considerations">
-      <t>This document has no actions for IANA.</t>
+      <t>IANA is requested to add two entries to the registry of AEAD algorithms: AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV, both referencing this document as their specification.</t>
     </section>
 
     <section title="Acknowledgements">
-      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnáček, Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson and Deb Cooley's team at NSA Information Assurance for their helpful suggestions.</t>
+      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnacek, Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson and Deb Cooley's team at NSA Information Assurance for their helpful suggestions.</t>
     </section>
   </middle>
 
