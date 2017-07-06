@@ -109,6 +109,33 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
+func testRandomCases(t *testing.T, keyLen int) {
+	r := sha3.NewShake128()
+	r.Write([]byte("AES-GCM-SIV"))
+
+	for n := 0; n < 8; n++ {
+		key := make([]byte, keyLen)
+		r.Read(key)
+		nonce := make([]byte, 12)
+		r.Read(nonce)
+		msg := make([]byte, 3*n)
+		r.Read(msg)
+		ad := make([]byte, 5*n)
+		r.Read(ad)
+
+		gcmsiv, _ := NewGCMSIV(key)
+		gcmsiv.Seal(nil, nonce, msg, ad)
+	}
+}
+
+func TestRandomCases128(t *testing.T) {
+	testRandomCases(t, 16)
+}
+
+func TestRandomCases256(t *testing.T) {
+	testRandomCases(t, 32)
+}
+
 func TestAgainstVectors128(t *testing.T) {
 	in, err := os.Open("output_add_info_be128.txt")
 	if err != nil {
