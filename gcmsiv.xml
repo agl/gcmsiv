@@ -291,7 +291,7 @@ func decrypt(key_generating_key,
 
       <t>The parameters for AEAD_AES_128_GCM_SIV are then: K_LEN is 16, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
 
-      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size: K_LEN is 32, P_MAX is 2^36, A_MAX is 2^32 - 1, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
+      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size: K_LEN is 32, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
     </section>
 
     <section title="Field operation examples">
