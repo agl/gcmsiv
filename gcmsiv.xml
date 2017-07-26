@@ -419,16 +419,16 @@ Counter |       Nonce                         Ciphertext
           <title>
             Birthday Paradox for Multi-collisions
           </title>
-          <author initials="S." surname="Kazuhiro" fullname="Kazuhiro Suzuki">
+          <author initials="K." surname="Suzuki" fullname="Suzuki Kazuhiro">
             <organization/>
           </author>
-          <author initials="T." surname="Dongvu" fullname="Dongvu Tonien">
+          <author initials="D." surname="Tonien" fullname="Tonien Dongvu">
             <organization/>
           </author>
-          <author initials="K." surname="Kaoru" fullname="Kaoru Kurosawa">
+          <author initials="K." surname="Kurosawa" fullname="Kurosawa Kaoru">
             <organization/>
           </author>
-          <author initials="T." surname="Koji" fullname="Koji Toyota">
+          <author initials="K." surname="Toyota" fullname="Toyota Koji">
             <organization/>
           </author>
           <date year="2006"/>
