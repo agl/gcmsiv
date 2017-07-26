@@ -189,7 +189,7 @@ func encrypt(key_generating_key,
     if bytelen(plaintext) > 2**36 {
             fail()
     }
-    if bytelen(additional_data) > 2**61-1 {
+    if bytelen(additional_data) > 2**36 {
             fail()
     }
 
@@ -240,7 +240,7 @@ func decrypt(key_generating_key,
     if bytelen(ciphertext) < 16 || bytelen(ciphertext) > 2**36 + 16 {
             fail()
     }
-    if bytelen(additional_data) > 2**61-1 {
+    if bytelen(additional_data) > 2**36 {
             fail()
     }
 
@@ -289,9 +289,9 @@ func decrypt(key_generating_key,
 
       <t>The key input to these AEADs becomes the key-generating key. Thus AEAD_AES_128_GCM_SIV takes a 16-byte key and AEAD_AES_256_GCM_SIV takes a 32-byte key.</t>
 
-      <t>The parameters for AEAD_AES_128_GCM_SIV are then: K_LEN is 16, P_MAX is 2^36, A_MAX is 2^61 - 1, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
+      <t>The parameters for AEAD_AES_128_GCM_SIV are then: K_LEN is 16, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
 
-      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size: K_LEN is 32, P_MAX is 2^36, A_MAX is 2^61 - 1, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
+      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size: K_LEN is 32, P_MAX is 2^36, A_MAX is 2^32 - 1, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
     </section>
 
     <section title="Field operation examples">
@@ -333,19 +333,35 @@ Counter |       Nonce                         Ciphertext
     <section title="Security Considerations" anchor="seccon">
       <t>A detailed analysis of these schemes appears in <xref target="AES-GCM-SIV"/> and the remainder of this section is a summary of that paper.</t>
 
-      <t>We recommend a limit of 2^50 plaintexts encrypted with a given key. Past this point, AES-GCM-SIV may be distinguishable from an ideal AEAD. (This is based on standard assumptions about AES.)</t>
-
       <t>The AEADs defined in this document calculate fresh AES keys for each nonce. This allows a larger number of plaintexts to be encrypted under a given key. Without this step, each SIV encryption would be like a standard GCM encryption with a random nonce. Since the nonce size for GCM is only 12 bytes, NIST set a limit <xref target="GCM"/> of 2^32 encryptions before the probability of duplicate nonces becomes too high.</t>
 
       <t>The authors felt that, while large, 2^32 wasn't so large that this limit could be safely ignored. For example, consider encrypting the contents of a hard disk where the AEAD record size is 512 bytes, to match the traditional size of a disk sector. This process would have encrypted 2^32 records after processing 2TB, yet hard drives of multiple terabytes are now common.</t>
 
       <t>Deriving fresh AES keys for each nonce alleviates this problem.</t>
 
-      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. However, we feel that the 2^32 limit for AES-GCM is too risky in a multi-key setting. Thus with AES-GCM-SIV we recommend that, for a specific key, a nonce not be repeated more than 2^8 times. (And, ideally, not be repeated at all.) See theorem six and figure four from the paper for detailed bounds.</t>
+      <t>If the nonce is fixed then AES-GCM-SIV acts like AES-GCM with a random nonce, with the caveat that identical plaintexts will produce identical ciphertexts. However, we feel that the 2^32 limit for AES-GCM is too risky in a multi-key setting. Thus with AES-GCM-SIV we recommend that, for a specific key, a nonce not be repeated more than 2^8 times. (And, ideally, not be repeated at all.) For up to 256 repeats of a nonce, the following message limits should be respected (this assumes a short AAD):</t>
 
-      <t>Kazuhiro et al <xref target="multibirthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV.</t>
+      <t><list>
+        <t>2^29 messages, where each plaintext is at most 1GiB</t>
+        <t>2^35 messages, where each plaintext is at most 128MiB</t>
+        <t>2^49 messages, where each plaintext is at most 1MiB</t>
+        <t>2^61 messages, where each plaintext is at most 16KiB</t>
+      </list></t>
+
+      <t>Suzuki et al <xref target="multibirthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV.</t>
+
+      <t>For situations where, for some reason, an even higher number of nonce repeats is possible (e.g. in devices with very poor randomness), the message limits need to be reconsidered. Theorem seven in the paper contains more details but, for up to 1,024 repeats of each nonce, the limits would be (again assuming a short AAD):</t>
+
+      <t><list>
+        <t>2^25 messages, where each plaintext is at most 1GiB</t>
+        <t>2^31 messages, where each plaintext is at most 128MiB</t>
+        <t>2^45 messages, where each plaintext is at most 1MiB</t>
+        <t>2^57 messages, where each plaintext is at most 16KiB</t>
+      </list></t>
 
       <t>In addition to calculating fresh AES keys for each nonce, these AEADs also calculate fresh POLYVAL keys. Previous versions of GCM-SIV did not do this and, instead, used part of the AEAD's key as the POLYVAL key. Bleichenbacher pointed out that this allowed an attacker who controlled the AEAD key to force the POLYVAL key to be zero. If a user of this AEAD authenticated messages with a secret additional-data value then this would be insecure as the attacker could calculate a valid authenticator without knowing the input. This does not violate the standard properties of an AEAD as the additional data is not assumed to be confidential. However, we want these AEADs to be robust to plausible misuse and also to be drop-in replacements for AES-GCM and so derive nonce-specific POLYVAL keys to avoid this issue.</t>
+
+      <t>We also wish to note that the probability of successful forgery increases with the number of attempts that an attacker is permitted. If an attacker is permitted extremely large numbers of attempts then the tiny probability that any given attempt succeeds may sum to a non-trivial chance.</t>
 
       <t>A security analysis of a similar scheme appears in <xref target="GCM-SIV"/>.</t>
     </section>
@@ -355,7 +371,7 @@ Counter |       Nonce                         Ciphertext
     </section>
 
     <section title="Acknowledgements">
-      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnacek, Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson, Scott Fluhrer, Tibor Jager, Bjoern Tackmann and Deb Cooley's team at NSA Information Assurance for their helpful suggestions and review.</t>
+      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnacek, Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson, Scott Fluhrer, Tibor Jager, Bjoern Tackmann, Yannick Seurin, Tetsu Iwata and Deb Cooley's team at NSA Information Assurance for their helpful suggestions and review.</t>
     </section>
   </middle>
 
@@ -394,7 +410,7 @@ Counter |       Nonce                         Ciphertext
           <author initials="Y." surname="Lindell" fullname="Yehuda Lindell">
             <organization/>
           </author>
-          <date year="2017"/>
+          <date year="2017" month="July"/>
         </front>
       </reference>
 
