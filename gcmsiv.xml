@@ -335,9 +335,9 @@ Counter |       Nonce                         Ciphertext
 
       <t>The AEADs defined in this document calculate fresh AES keys for each nonce. This allows a larger number of plaintexts to be encrypted under a given key. Without this step, AES-GCM-SIV encryption would be limited by the birthday bound like other standard modes (e.g., AES-GCM, AES-CCM, AES-SIV). This means that when 2^64 blocks have been encrypted overall, the adversary has an advantage of 1/2. Thus, in order to limit the adversary’s advantage to 2^-32, at most 2^48 blocks can be encrypted overall. In contrast, by deriving fresh keys from each nonce, it is possible to encrypt a far larger number of messages and blocks with AES-GCM-SIV.</t>
 
-      <t>We stress that nonce-misuse resistant schemes guarantee that if a nonce repeats then the only security loss is that identical plaintexts will produce identical ciphertexts. Since this can also be a concern (since the fact that a plaintext repeated is revealed), we do not recommend using a fixed nonce as a policy (unless there are limits on the message length and on repeating contents, as in the case of key wrapping). In addition, due to the better-than- birthday bounds achieved by AES-GCM- SIV when different nonces are used, we recommend not choosing to repeat nonces (especially at high volumes of encryption).</t>
+      <t>We stress that nonce-misuse resistant schemes guarantee that if a nonce repeats then the only security loss is that identical plaintexts will produce identical ciphertexts. Since this can also be a concern (as the fact that the same plaintext has been encrypted twice is revealed), we do not recommend using a fixed nonce as a policy (unless there are limits on the message length and on repeating contents, as in the case of key wrapping). In addition, due to the better-than-birthday bounds achieved by AES-GCM-SIV when different nonces are used, we recommend not choosing to repeat nonces (especially at high volumes of encryption).</t>
 
-      <t>Some example usage bounds for AES-GCM-SIV are given below (for these bounds, the adversary’s advantage is always below 2^-32). For up to 256 repeats of a nonce (i.e., where one can assumes that nonce misuse is no more than this bound), the following message limits should be respected (this assumes a short AAD):</t>
+      <t>Some example usage bounds for AES-GCM-SIV are given below (for these bounds, the adversary’s advantage is always below 2^-32). For up to 256 repeats of a nonce (i.e., where one can assume that nonce misuse is no more than this bound), the following message limits should be respected (this assumes a short AAD):</t>
 
       <t><list>
           <t>2^29 messages, where each plaintext is at most 1GiB</t>
@@ -346,7 +346,7 @@ Counter |       Nonce                         Ciphertext
           <t>2^61 messages, where each plaintext is at most 16KiB</t>
       </list></t>
 
-      <t>Suzuki et al <xref target="multibirthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV. In fact, nonces repeat far less than 256 times when randomly chosen. Thus, the bounds obtained for random nonces are as follows (as above, for these bounds the adversary’s advantage is bounded by 2^-32):</t>
+      <t>Suzuki et al <xref target="multibirthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV. In fact, nonces repeat far less than 256 times when randomly chosen. Thus, the bounds obtained for random nonces are as follows (as above, for these bounds the adversary’s advantage is at most 2^-32):</t>
 
       <t><list>
           <t>2^32 messages, where each plaintext is at most 8GiB</t>
@@ -354,7 +354,7 @@ Counter |       Nonce                         Ciphertext
           <t>2^64 messages, where each plaintext is at most 128KiB</t>
       </list></t>
 
-      <t>For situations where, for some reason, an even higher number of nonce repeats is possible (e.g. in devices with very poor randomness), the message limits need to be reconsidered. Theorem seven in the paper contains more details but, for up to 1,024 repeats of each nonce, the limits would be (again assuming a short AAD):</t>
+      <t>For situations where, for some reason, an even higher number of nonce repeats is possible (e.g. in devices with very poor randomness), the message limits need to be reconsidered. Theorem Seven in the paper contains more details but, for up to 1,024 repeats of each nonce, the limits would be (again assuming a short AAD):</t>
 
       <t><list>
           <t>2^25 messages, where each plaintext is at most 1GiB</t>
@@ -367,7 +367,7 @@ Counter |       Nonce                         Ciphertext
 
       <t>We also wish to note that the probability of successful forgery increases with the number of attempts that an attacker is permitted. If an attacker is permitted extremely large numbers of attempts then the tiny probability that any given attempt succeeds may sum to a non-trivial chance.</t>
 
-      <t>A security analysis of a similar scheme without nonce-based key derivation appears in <xref target="GCM-SIV"/> and a full analysis of the bounds when applying nonce-based key derivation appears in <xref target="key-derive"/>. A larger table of bounds appears at <xref target="aes-gcm-siv-homepage"/>.</t>
+      <t>A security analysis of a similar scheme without nonce-based key derivation appears in <xref target="GCM-SIV"/> and a full analysis of the bounds when applying nonce-based key derivation appears in <xref target="key-derive"/>. A larger table of bounds and other information appears at <xref target="aes-gcm-siv-homepage"/>.</t>
     </section>
 
     <section title="IANA Considerations">
