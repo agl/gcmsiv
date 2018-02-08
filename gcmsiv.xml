@@ -415,18 +415,18 @@ Counter |       Nonce                         Ciphertext
         </front>
       </reference>
 
-      <reference anchor="BHT18" target="https://eprint.iacr.org/">
+      <reference anchor="BHT18" target="https://eprint.iacr.org/2018/136.pdf">
         <front>
           <title>
             Revisiting AES-GCM-SIV: Multi-user Security, Faster Key Derivation, and Better Bounds
           </title>
-          <author initials="P." surname="Bose" fullname="Priyanka Bose ">
+          <author initials="P." surname="Bose" fullname="Priyanka Bose">
             <organization/>
           </author>
           <author initials="V.T." surname="Hoang" fullname="Viet Tung Hoang">
             <organization/>
           </author>
-          <author initials="S." surname="Tessaro" fullname=" Stefano Tessaro">
+          <author initials="S." surname="Tessaro" fullname="Stefano Tessaro">
             <organization/>
           </author>
           <date year="2018" month="May"/>
