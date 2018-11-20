@@ -13,7 +13,7 @@
 <?rfc sortrefs="yes" ?>
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
-<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-07" ipr="trust200902">
+<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-09" ipr="trust200902">
   <front>
     <title abbrev="aes-gcm-siv">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
@@ -56,7 +56,7 @@
       </address>
     </author>
 
-    <date month="November" year="2017" />
+    <date month="November" year="2018" />
 
     <area>General</area>
     <workgroup>CFRG</workgroup>
