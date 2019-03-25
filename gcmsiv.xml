@@ -1,6 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="US-ASCII"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
-<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2119 SYSTEM
+"http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC8174 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.8174.xml">
 <!ENTITY RFC3610 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3610.xml">
 <!ENTITY RFC5116 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5116.xml">
 <!ENTITY RFC5297 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5297.xml">
@@ -13,12 +15,22 @@
 <?rfc sortrefs="yes" ?>
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
-<rfc category="info" docName="draft-irtf-cfrg-gcmsiv-09" ipr="trust200902">
+
+<rfc category="info" ipr="trust200902" number="8452" submissionType="IRTF"
+     consensus="yes">
   <front>
-    <title abbrev="aes-gcm-siv">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
+    <title abbrev="AES-GCM-SIV">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
     <author fullname="Shay Gueron" initials="S." surname="Gueron">
-      <organization>University of Haifa and Amazon Web Services</organization>
+
+<!-- [rfced] Shay, we suggest using a shortened form of your organization
+names in the first-page header, so that it fits horizontally. Please let us
+know if "University of Haifa and AWS" as it appears in the edited document is
+acceptable or if you prefer otherwise.  (Note: the full organization names
+still appear in the Authors' Addresses.)
+-->
+
+      <organization abbrev="University of Haifa and AWS">University of Haifa and Amazon Web Services</organization>
       <address>
         <postal>
           <street>Abba Khoushy Ave 199</street>
@@ -38,7 +50,7 @@
           <city>San Francisco</city>
           <region>CA</region>
           <code>94105</code>
-          <country>US</country>
+          <country>United States of America</country>
         </postal>
         <email>agl@google.com</email>
       </address>
@@ -56,10 +68,9 @@
       </address>
     </author>
 
-    <date month="November" year="2018" />
+    <date month="March" year="2019" />
 
-    <area>General</area>
-    <workgroup>CFRG</workgroup>
+    <workgroup>Crypto Forum</workgroup>
 
     <keyword>authenticated encryption</keyword>
     <keyword>aead</keyword>
@@ -68,54 +79,130 @@
     <keyword>siv</keyword>
 
     <abstract>
-      <t>This memo specifies two authenticated encryption algorithms that are nonce misuse-resistant - that is that they do not fail catastrophically if a nonce is repeated.</t>
+<!--[rfced] Per Section 2.1 of RFC 5743, please add a statement in the
+abstract identifying the document as the product of the Research Group.
+-->
+
+<!--[rfced] In addition, Section 2.1 of RFC 5743 states:
+"The breadth of review the document has received must also be
+noted.  For example, was this document read by all the active
+research group members, only three people, or folks who are not
+"in" the RG but are expert in the area?"
+Please let us know what text should be added.
+-->
+      <t>This memo specifies two authenticated encryption algorithms that are
+      nonce misuse resistant -- that is, they do not fail catastrophically
+      if a nonce is repeated.</t>
     </abstract>
   </front>
 
   <middle>
     <section title="Introduction">
-      <t>The concept of "Authenticated encryption with additional data" (AEAD <xref target="RFC5116"/>) couples confidentiality and integrity in a single operation, avoiding the risks of the previously common practice of using ad-hoc constructions of block-cipher and hash primitives. The most popular AEAD, AES-GCM <xref target="GCM"/>, is seeing widespread use due to its attractive performance.</t>
+      <t>The concept of Authenticated Encryption with Additional Data (AEAD)
+      <xref target="RFC5116"/> couples confidentiality and integrity in a
+      single operation, avoiding the risks of the previously common practice
+      of using ad hoc constructions of block-cipher and hash primitives. The
+      most popular AEAD, AES-GCM <xref target="GCM"/>, is seeing widespread
+      use due to its attractive performance.</t>
 
-      <t>However, some AEADs (including AES-GCM) suffer catastrophic failures of confidentiality and/or integrity when two distinct messages are encrypted with the same key and nonce. While the requirements for AEADs specify that the pair of (key, nonce) shall only ever be used once, and thus prohibit this, in practice this is a worry.</t>
+      <t>However, some AEADs (including AES-GCM) suffer catastrophic failures
+      of confidentiality and/or integrity when two distinct messages are
+      encrypted with the same key and nonce. While the requirements for AEADs
+      specify that the pair of (key, nonce) shall only ever be used once, and
+      thus prohibit this, this is a worry in practice.</t>
 
       <t>Nonce misuse-resistant AEADs do not suffer from this problem. For this class of AEADs, encrypting two messages with the same nonce only discloses whether the messages were equal or not. This is the minimum amount of information that a deterministic algorithm can leak in this situation.</t>
 
-      <t>This memo specifies two nonce misuse-resistant AEADs: <spanx style="verb">AEAD_AES_128_GCM_SIV</spanx> and <spanx style="verb">AEAD_AES_256_GCM_SIV</spanx>. These AEADs are designed to be able to take advantage of existing hardware support for AES-GCM and can decrypt within 5% of the speed of AES-GCM (for multi-kilobyte messages). Encryption is, perforce, slower than AES-GCM because two passes are required in order to achieve that nonce misuse-resistance property. However, measurements suggest that it can still run at two-thirds of the speed of AES-GCM.</t>
+      <t>This memo specifies two nonce misuse-resistant AEADs:
+      AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV. These AEADs are designed
+      to be able to take advantage of existing hardware support for AES-GCM
+      and can decrypt within 5% of the speed of AES-GCM (for multikilobyte
+      messages). Encryption is, perforce, slower than AES&#8209;GCM, because two
+      passes are required in order to achieve that nonce misuse-resistance
+      property. However, measurements suggest that it can still run at
+      two-thirds of the speed of AES-GCM.</t>
 
-      <t>We suggest that these AEADs be considered in any situation where nonce uniqueness cannot be guaranteed. This includes situations where there is no stateful counter or where such state cannot be guaranteed, as when multiple encryptors use the same key. As discussed in <xref target="seccon"></xref>, it is RECOMMENDED to use this scheme with randomly chosen nonces.</t>
+      <t>We suggest that these AEADs be considered in any situation where
+      nonce uniqueness cannot be guaranteed. This includes situations where
+      there is no stateful counter or where such state cannot be guaranteed,
+      as when multiple encryptors use the same key. As discussed in <xref
+      target="seccon"></xref>, it is RECOMMENDED to use this scheme with
+      randomly chosen nonces.</t>
     </section>
 
     <section title="Requirements Language">
-      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-      "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-      document are to be interpreted as described in <xref
-      target="RFC2119">RFC 2119</xref>.</t>
+        <t>
+    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+    NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED",
+    "MAY", and "OPTIONAL" in this document are to be interpreted as
+    described in BCP&nbsp;14 <xref target="RFC2119"/> <xref target="RFC8174"/> 
+    when, and only when, they appear in all capitals, as shown here.
+        </t>
     </section>
 
     <section title="POLYVAL">
-      <t>The GCM-SIV construction is similar to GCM: the block cipher is used in counter mode to encrypt the plaintext and a polynomial authenticator is used to provide integrity. The authenticator in GCM-SIV is called POLYVAL.</t>
+      <t>The GCM-SIV construction is similar to GCM: the block cipher is used
+      in counter mode to encrypt the plaintext, and a polynomial authenticator
+      is used to provide integrity. The authenticator in GCM-SIV is called
+      POLYVAL.</t>
 
-      <t>POLYVAL, like GHASH (the authenticator in AES-GCM, see <xref target="GCM"/> section 6.4), operates in a binary field of size 2^128. The field is defined by the irreducible polynomial x^128 + x^127 + x^126 + x^121 + 1. The sum of any two elements in the field is the result of XORing them. The product of any two elements is calculated using standard (binary) polynomial multiplication followed by reduction modulo the irreducible polynomial.</t>
+      <t>POLYVAL, like GHASH (the authenticator in AES-GCM; see <xref
+      target="GCM"/>, Section 6.4), operates in a binary field of size
+      2^128. The field is defined by the irreducible polynomial x^128 + x^127
+      + x^126 + x^121 + 1. The sum of any two elements in the field is the
+      result of XORing them. The product of any two elements is calculated
+      using standard (binary) polynomial multiplication followed by reduction
+      modulo the irreducible polynomial.</t>
 
-      <t>We define another binary operation on elements of the field: dot(a, b), where dot(a, b) = a * b * x^-128. The value of the field element x^-128 is equal to x^127 + x^124 + x^121 + x^114 + 1. The result, dot(a, b), of this multiplication is another field element.</t>
+      <t>We define another binary operation on elements of the field: 
+<vspace />
+dot(a, b), where dot(a, b) = a * b * x^-128. The value of the field element
+      x^-128 is equal to x^127 + x^124 + x^121 + x^114 + 1. The result of this
+      multiplication, dot(a, b), is another field element.</t>
 
-      <t>Polynomials in this field are converted to and from 128-bit strings by taking the least-significant bit of the first byte to be the coefficient of x^0, the most-significant bit of the first byte to the coefficient of x^7 and so on, until the most-significant bit of the last byte is the coefficient of x^127.</t>
+      <t>Polynomials in this field are converted to and from 128-bit strings
+      by taking the least significant bit of the first byte to be the
+      coefficient of x^0, the most significant bit of the first byte to be the
+      coefficient of x^7, and so on, until the most significant bit of the
+      last byte is the coefficient of x^127.</t>
 
-      <t>POLYVAL takes a field element, H, and a series of field elements X_1, ..., X_s. Its result is S_s, where S is defined by the iteration S_0 = 0; S_j = dot(S_{j-1} + X_j, H), for j = 1..s</t>
+      <t>POLYVAL takes a field element, H, and a series of field elements
+<vspace />
+X_1, ..., X_s. Its result is S_s, where S is defined by the iteration S_0 =
+      0; S_j = dot(S_{j-1} + X_j, H), for j = 1..s.</t>
 
-      <t>We note that POLYVAL(H, X_1, X_2, ...) is equal to ByteReverse(GHASH(ByteReverse(H) * x, ByteReverse(X_1), ByteReverse(X_2), ...)), where ByteReverse is a function that reverses the order of 16 bytes. See <xref target="ghash"></xref> for a more detailed explanation.</t>
+      <t>We note that POLYVAL(H, X_1, X_2, ...) is equal to
+      ByteReverse(GHASH(ByteReverse(H) * x, ByteReverse(X_1),
+      ByteReverse(X_2), ...)), where ByteReverse is a function that reverses
+      the order of 16 bytes. See <xref target="ghash"></xref> for a more
+      detailed explanation.</t>
     </section>
 
     <section title="Encryption">
-      <t>AES-GCM-SIV encryption takes a 16- or 32-byte key-generating key, a 96-bit nonce, and variable-length plaintext &amp; additional data byte-strings. It outputs an authenticated ciphertext that will be 16 bytes longer than the plaintext. Both encryption and decryption are only defined on inputs that are a whole number of bytes.</t>
+      <t>AES-GCM-SIV encryption takes a 16- or 32-byte key-generating key, a
+      96-bit nonce, and plaintext and additional data
+      byte strings of variable length. It outputs an authenticated ciphertext that will be 16
+      bytes longer than the plaintext. Both encryption and decryption are only
+      defined on inputs that are a whole number of bytes.</t>
 
-      <t>If the key-generating key is 16 bytes long then AES-128 is used throughout. Otherwise AES-256 is used throughout.</t>
+      <t>If the key-generating key is 16 bytes long, then AES-128 is used
+      throughout. Otherwise, AES-256 is used throughout.</t>
 
-      <t>The first step of encryption is to generate per-nonce, message-authentication and message-encryption keys. The message-authentication key is 128-bit and the message-encryption key is either 128- (for AES-128) or 256-bit (for AES-256).</t>
+      <t>The first step of encryption is to generate per-nonce,
+      message-authentication and message-encryption keys. The
+      message-authentication key is 128 bit, and the message-encryption key is
+      either 128 (for AES-128) or 256 bit (for AES-256).</t>
 
-      <t>These keys are generated by encrypting a series of plaintext blocks that contain a 32-bit, little-endian counter followed by the nonce, and then discarding the second half of the resulting ciphertext. In the AES-128 case, 128 + 128 = 256 bits of key material need to be generated and, since encrypting each block yields 64 bits after discarding half, four blocks need to be encrypted. The counter values for these blocks are 0, 1, 2 and 3. For AES-256, six blocks are needed in total, with counter values 0 through 5 (inclusive).</t>
+      <t>These keys are generated by encrypting a series of plaintext blocks
+      that contain a 32-bit, little-endian counter followed by the nonce, and
+      then discarding the second half of the resulting ciphertext. In the
+      AES-128 case, 128 + 128 = 256 bits of key material need to be generated,
+      and, since encrypting each block yields 64 bits after discarding half,
+      four blocks need to be encrypted. The counter values for these blocks
+      are 0, 1, 2, and 3. For AES-256, six blocks are needed in total, with
+      counter values 0 through 5 (inclusive).</t>
 
-      <t>In pseudocode form, where ++ indicates concatenation and x[:8] indicates taking only the first eight bytes from x:</t>
+      <t>In pseudocode form, where "++" indicates concatenation and "x[:8]" indicates taking only the first eight bytes from x:</t>
       <figure align="center">
         <artwork align="left"><![CDATA[
 func derive_keys(key_generating_key, nonce) {
@@ -145,13 +232,33 @@ func derive_keys(key_generating_key, nonce) {
 
       <t>Define the "length block" as a 16-byte value that is the concatenation of the 64-bit, little-endian encodings of bytelen(additional_data) * 8 and bytelen(plaintext) * 8. Pad the plaintext and additional data with zeros until they are each a multiple of 16 bytes, the AES block size. Then X_1, X_2, ... (the series of field elements that are inputs to POLYVAL) are the concatenation of the padded additional data, the padded plaintext, and the length block.</t>
 
-      <t>Calculate S_s = POLYVAL(message-authentication-key, X_1, X_2, ...). XOR the first twelve bytes of S_s with the nonce and clear the most-significant bit of the last byte. Encrypt the result with AES using the message-encryption key to produce the tag.</t>
+      <t>Calculate S_s = POLYVAL(message-authentication-key, X_1, X_2,
+      ...). XOR the first twelve bytes of S_s with the nonce and clear the
+      most significant bit of the last byte. Encrypt the result with AES using the message-encryption key to produce the tag.</t>
 
-      <t>(It's worth highlighting a contrast with AES-GCM here: AES-GCM authenticates the encoded additional data and ciphertext, while AES-GCM-SIV authenticates the encoded additional data and <spanx style="emph">plaintext</spanx>.)</t>
+<!--[rfced] Are the underscores around the word "plaintext" 
+being used for emphasis or another purpose, or may we remove them?
 
-      <t>The encrypted plaintext is produced by using AES, with the message-encryption key, in counter mode (see <xref target="SP800-38A"/>, section 6.5) on the unpadded plaintext. The initial counter block is the tag with the most-significant bit of the last byte set to one. The counter advances by incrementing the first 32 bits interpreted as an unsigned, little-endian integer, wrapping at 2^32. The result of the encryption is the encrypted plaintext (truncated to the length of the plaintext) followed by the tag.</t>
+Original:
+   (It's worth highlighting a contrast with AES-GCM here: AES-GCM
+   authenticates the encoded additional data and ciphertext, while AES-
+   GCM-SIV authenticates the encoded additional data and _plaintext_.)
+--> 
+      <t>(It's worth highlighting a contrast with AES-GCM here: AES-GCM
+      authenticates the encoded additional data and ciphertext, while
+      AES&#8209;GCM-SIV authenticates the encoded additional data and <spanx
+      style="emph">plaintext</spanx>.)</t>
 
-      <t>In pseudo-code form, the encryption process can be expressed as:</t>
+      <t>The encrypted plaintext is produced by using AES, with the
+      message-encryption key, in counter mode (see <xref target="SP800-38A"/>,
+      Section 6.5) on the unpadded plaintext. The initial counter block is the
+      tag with the most significant bit of the last byte set to one. The
+      counter advances by incrementing the first 32 bits interpreted as an
+      unsigned, little-endian integer, wrapping at 2^32. The result of the
+      encryption is the encrypted plaintext (truncated to the length of the
+      plaintext), followed by the tag.</t>
+
+      <t>In pseudocode form, the encryption process can be expressed as:</t>
       <figure align="center">
         <artwork align="left"><![CDATA[
 func right_pad_to_multiple_of_16_bytes(input) {
@@ -221,15 +328,45 @@ func encrypt(key_generating_key,
     </section>
 
     <section title="Decryption">
-      <t>Decryption takes a 16- or 32-byte key-generating key, a 96-bit nonce, and variable-length ciphertext &amp; additional data byte-strings. It either fails, or outputs a plaintext that is 16 bytes shorter than the ciphertext.</t>
+      <t>Decryption takes a 16- or 32-byte key-generating key, a 96-bit nonce,
+      and ciphertext and additional data byte strings of variable length. It
+      either fails or outputs a plaintext that is 16 bytes shorter than the
+      ciphertext.</t>
 
       <t>To decrypt an AES-GCM-SIV ciphertext, first derive the message-encryption and message-authentication keys in the same manner as when encrypting.</t>
 
-      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes, then fail. Otherwise split the input into the encrypted plaintext and a 16-byte tag. Decrypt the encrypted plaintext with the message-encryption key in counter mode, where the initial counter block is the tag with the most-significant bit of the last byte set to one. Advance the counter for each block in the same way as when encrypting. At this point the plaintext is unauthenticated and MUST NOT be output until the following tag confirmation is complete:</t>
 
-      <t>Pad the additional data and plaintext with zeros until they are each a multiple of 16 bytes, the AES block size. Calculate the length block and X_1, X_2, ... as above and compute S_s = POLYVAL(message-authentication-key, X_1, X_2, ...). Compute the expected tag by XORing S_s and the nonce, clearing the most-significant bit of the last byte and encrypting with the message-encryption key. Compare the provided and expected tag values in constant time. Fail the decryption if they do not match (and do not release the plaintext), otherwise return the plaintext.</t>
+<!--[rfced] It appears that this document uses both "**" and "^"
+to indicate exponentiation. For example: 2^36 and 2**36.
+Please let us know if changes are needed to make the notation 
+consistent, or if this is an intentional distinction.
+-->
+      <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes,
+      then fail. Otherwise, split the input into the encrypted plaintext and a
+      16-byte tag. Decrypt the encrypted plaintext with the message-encryption
+      key in counter mode, where the initial counter block is the tag with the
+      most significant bit of the last byte set to one. Advance the counter
+      for each block in the same way as when encrypting. At this point, the
+      plaintext is unauthenticated and MUST NOT be output until the following
+      tag confirmation is complete:</t>
 
-      <t>In pseudo-code form, the decryption process can be expressed as:</t>
+      <t>Pad the additional data and plaintext with zeros until they are each
+      a multiple of 16 bytes, the AES block size. Calculate the length block
+      and X_1, X_2, ... as above and compute
+      <vspace />
+   S_s = POLYVAL(message-authentication-key, X_1, X_2, ...) 
+      </t>
+
+<t>
+Compute the expected
+      tag by XORing S_s and the nonce, clearing the most significant bit of
+      the last byte and encrypting with the message-encryption key. Compare
+      the provided and expected tag values in constant time. Fail the
+      decryption if they do not match (and do not release the plaintext);
+      otherwise, return the plaintext.</t>
+
+
+      <t>In pseudocode form, the decryption process can be expressed as:</t>
       <figure align="center">
         <artwork align="left"><![CDATA[
 func decrypt(key_generating_key,
@@ -284,25 +421,62 @@ func decrypt(key_generating_key,
     </section>
 
     <section title="AEADs">
-      <t>We define two AEADs, in the format of RFC 5116, that use AES-GCM-SIV: AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV. They differ only in the size of the AES key used.</t>
+      <t>We define two AEADs, in the format of RFC 5116, that use AES-GCM-SIV:
+      AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV. They differ only in the
+      size of the AES key used.</t>
 
-      <t>The key input to these AEADs becomes the key-generating key. Thus AEAD_AES_128_GCM_SIV takes a 16-byte key and AEAD_AES_256_GCM_SIV takes a 32-byte key.</t>
+      <t>The key input to these AEADs becomes the key-generating key. Thus,
+      AEAD_AES_128_GCM_SIV takes a 16-byte key and AEAD_AES_256_GCM_SIV takes
+      a 32-byte key.</t>
 
-      <t>The parameters for AEAD_AES_128_GCM_SIV are then: K_LEN is 16, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
+      <t>The parameters for AEAD_AES_128_GCM_SIV are then as follows:
+<vspace />
+K_LEN is
+      16, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12, and C_MAX is
+      2^36 + 16.</t>
 
-      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size: K_LEN is 32, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12 and C_MAX is 2^36 + 16.</t>
+      <t>The parameters for AEAD_AES_256_GCM_SIV differ only in the key size:
+<vspace />
+K_LEN is 32, P_MAX is 2^36, A_MAX is 2^36, N_MIN and N_MAX are 12, and C_MAX is 2^36 + 16.</t>
     </section>
 
-    <section title="Field operation examples">
+    <section title="Field Operation Examples">
       <t>Polynomials in this document will be written as 16-byte values. For example, the sixteen bytes 01000000000000000000000000000492 would represent the polynomial x^127 + x^124 + x^121 + x^114 + 1, which is also the value of x^-128 in this field.</t>
 
-      <t>If a = 66e94bd4ef8a2c3b884cfa59ca342b2e and b = ff000000000000000000000000000000 then a + b = 99e94bd4ef8a2c3b884cfa59ca342b2e, a * b = 37856175e9dc9df26ebc6d6171aa0ae9 and dot(a, b) = ebe563401e7e91ea3ad6426b8140c394.</t>
+<!--[rfced] FYI, some line breaks and blank lines have been added to
+make equations easier to read in Sections 5 and 7 and Appendixes
+A and B. Please let us know if prefer other formatting. For example:
+
+Original:
+   If a = 66e94bd4ef8a2c3b884cfa59ca342b2e and b =
+   ff000000000000000000000000000000 then a + b =
+   99e94bd4ef8a2c3b884cfa59ca342b2e, a * b =
+   37856175e9dc9df26ebc6d6171aa0ae9 and dot(a, b) =
+   ebe563401e7e91ea3ad6426b8140c394.
+
+Current:
+      If a = 66e94bd4ef8a2c3b884cfa59ca342b2e and
+         b = ff000000000000000000000000000000,
+    then a + b = 99e94bd4ef8a2c3b884cfa59ca342b2e,
+         a * b = 37856175e9dc9df26ebc6d6171aa0ae9, and
+         dot(a, b) = ebe563401e7e91ea3ad6426b8140c394.
+-->
+
+<figure><artwork>
+   If a = 66e94bd4ef8a2c3b884cfa59ca342b2e and
+      b = ff000000000000000000000000000000,
+ then a + b = 99e94bd4ef8a2c3b884cfa59ca342b2e,
+      a * b = 37856175e9dc9df26ebc6d6171aa0ae9, and
+      dot(a, b) = ebe563401e7e91ea3ad6426b8140c394.
+</artwork></figure>
     </section>
 
-    <section title="Worked example">
+    <section title="Worked Example">
       <t>Consider the encryption of the plaintext "Hello world" with the additional data "example" under key ee8e1ed9ff2540ae8f2ba9f50bc2f27c using AEAD_AES_128_GCM_SIV. The random nonce that we'll use for this example is 752abad3e0afb5f434dc4310.</t>
 
-      <t>In order to generate the message-authentication and message-encryption keys, a counter is combined with the nonce to form four blocks. These blocks are encrypted with key given above:</t>
+      <t>In order to generate the message-authentication and
+      message-encryption keys, a counter is combined with the nonce to form
+      four blocks. These blocks are encrypted with the key given above:</t>
 
       <figure align="center">
         <artwork align="left"><![CDATA[
@@ -314,89 +488,210 @@ Counter |       Nonce                         Ciphertext
 ]]></artwork>
       </figure>
 
-      <t>The latter halves of the ciphertext blocks are discarded and the remaining bytes are concatenated to form the per-message keys. Thus the message-authentication key is 310728d9911f1f3837b24316c3fab9a0 and the message-encryption key is a4c5ae6249963279c100be4d7e2c6edd.</t>
+      <t>The latter halves of the ciphertext blocks are discarded and the
+      remaining bytes are concatenated to form the per-message keys. Thus, the
+      message-authentication key is 310728d9911f1f3837b24316c3fab9a0, and the
+      message-encryption key is a4c5ae6249963279c100be4d7e2c6edd.</t>
 
-      <t>The length block contains the encoding of the bit-lengths of the additional data and plaintext, respectively. The string "example" is seven characters, thus 56 bits (or 0x38 in hex). The string "Hello world" is 11 characters, or 88 = 0x58 bits. Thus the length block is 38000000000000005800000000000000.</t>
+      <t>The length block contains the encoding of the bit lengths of the additional data and plaintext, respectively. The string "example" is seven characters, thus 56 bits (or 0x38 in hex). The string "Hello world" is 11 characters, or 88 = 0x58 bits. Thus, the length block is 38000000000000005800000000000000.</t>
 
-      <t>The input to POLYVAL is the padded additional data, padded plaintext and then the length block. This is 6578616d706c6500000000000000000048656c6c6f20776f726c64000000000038000000000000005800000000000000, based on the ASCII encoding of "example" (6578616d706c65) and of "Hello world" (48656c6c6f20776f726c64).</t>
+      <t>The input to POLYVAL is the padded additional data, padded plaintext,
+      and then the length block. This is
+      6578616d706c6500000000000000000048656c6c6f20776f726c64000000000038000000000000005800000000000000,
+      based on the ASCII encoding of "example" (6578616d706c65) and "Hello
+      world" (48656c6c6f20776f726c64).</t>
 
       <t>Calling POLYVAL with the message-authentication key and the input above results in S_s = ad7fcf0b5169851662672f3c5f95138f.</t>
 
-      <t>Before encrypting, the nonce is XORed in and the most-significant bit of the last byte is cleared. This gives d85575d8b1c630e256bb6c2c5f95130f because that bit happened to be one previously. Encrypting with the message-encryption key (using AES-128) gives the tag, which is 4fbcdeb7e4793f4a1d7e4faa70100af1.</t>
+      <t>Before encrypting, the nonce is XORed in and the most significant bit of the last byte is cleared. This gives d85575d8b1c630e256bb6c2c5f95130f, because that bit happened to be one previously. Encrypting with the message-encryption key (using AES&#8209;128) gives the tag, which is 4fbcdeb7e4793f4a1d7e4faa70100af1.</t>
 
-      <t>In order to form the initial counter block, the most-significant bit of the last byte of the tag is set to one. That doesn't result in a change in this example. Encrypting this with the message key (using AES-128) gives the first block of the keystream: 1551f2c1787e81deac9a99f139540ab5.</t>
+      <t>In order to form the initial counter block, the most significant bit of the last byte of the tag is set to one. That doesn't result in a change in this example. Encrypting this with the message key (using AES-128) gives the first block of the keystream: 1551f2c1787e81deac9a99f139540ab5.</t>
 
       <t>The final ciphertext is the result of XORing the plaintext with the keystream and appending the tag. That gives 5d349ead175ef6b1def6fd4fbcdeb7e4793f4a1d7e4faa70100af1.</t>
     </section>
 
     <section title="Security Considerations" anchor="seccon">
-      <t>AES-GCM-SIV decryption involves first producing an unauthenticated plaintext. This plaintext is vulnerable to manipulation by an attacker thus, if an implementation released some or all of the plaintext before authenticating it, other parts of a system may process malicious data as if it were authentic. AES-GCM might be less likely to lead implementations to do this because, there, the ciphertext is generally authenticated before, or concurrently with, the plaintext calculation. Therefore this text requires that implementations MUST NOT release unauthenticated plaintext. Thus system designers should consider memory limitations when picking the size of AES-GCM-SIV plaintexts: large plaintexts may not fit in the availible memory of some machines, tempting implementations to release unverified plaintext.</t>
+      <t>AES-GCM-SIV decryption involves first producing an unauthenticated
+      plaintext. This plaintext is vulnerable to manipulation by an attacker;
+      thus, if an implementation released some or all of the plaintext before
+      authenticating it, other parts of a system may process malicious data as
+      if it were authentic. AES-GCM might be less likely to lead
+      implementations to do this, because there the ciphertext is generally
+      authenticated before, or concurrently with, the plaintext
+      calculation. Therefore, this text requires that implementations MUST NOT
+      release unauthenticated plaintext. Thus, system designers should consider
+      memory limitations when picking the size of AES-GCM-SIV plaintexts:
+      large plaintexts may not fit in the available memory of some machines,
+      tempting implementations to release unverified plaintext.</t>
 
-      <t>A detailed cryptographic analysis of AES-GCM-SIV appears in <xref target="AES-GCM-SIV"/> and the remainder of this section is a summary of that paper.</t>
+      <t>A detailed cryptographic analysis of AES-GCM-SIV appears in <xref
+      target="AES-GCM-SIV"/>, and the remainder of this section is a summary of
+      that paper.</t>
 
-      <t>The AEADs defined in this document calculate fresh AES keys for each nonce. This allows a larger number of plaintexts to be encrypted under a given key. Without this step, AES-GCM-SIV encryption would be limited by the birthday bound like other standard modes (e.g., AES-GCM, AES-CCM <xref target="RFC3610"/>, and AES-SIV <xref target="RFC5297"/>). This means that when 2^64 blocks have been encrypted overall, a distinguishing adversary, who is trying to break the confidentiality of the scheme, has an advantage of 1/2. Thus, in order to limit the adversary’s advantage to 2^-32, at most 2^48 blocks can be encrypted overall. In contrast, by deriving fresh keys from each nonce, it is possible to encrypt a far larger number of messages and blocks with AES-GCM-SIV.</t>
+      <t>The AEADs defined in this document calculate fresh AES keys for each
+      nonce. This allows a larger number of plaintexts to be encrypted under a
+      given key. Without this step, AES-GCM-SIV encryption would be limited by
+      the birthday bound like other standard modes (e.g., AES-GCM, AES-CCM
+      <xref target="RFC3610"/>, and AES-SIV <xref target="RFC5297"/>). This
+      means that when 2^64 blocks have been encrypted overall, a
+      distinguishing adversary who is trying to break the confidentiality of
+      the scheme has an advantage of 1/2. Thus, in order to limit the
+      adversary's advantage to 2^-32, at most 2^48 blocks can be encrypted
+      overall. In contrast, by deriving fresh keys from each nonce, it is
+      possible to encrypt a far larger number of messages and blocks with
+      AES-GCM-SIV.</t>
 
-      <t>We stress that nonce-misuse resistant schemes guarantee that if a nonce repeats then the only security loss is that identical plaintexts will produce identical ciphertexts. Since this can also be a concern (as the fact that the same plaintext has been encrypted twice is revealed), we do not recommend using a fixed nonce as a policy. In addition, as we show below, better-than-birthday bounds are achieved by AES-GCM-SIV when the nonce repetition rate is low. Finally, as shown in <xref target="BHT18"/>, there is a great security benefit in the multi-user/multi-key setting when each particular nonce is re-used by a small number of users only. We stress that the nonce misuse-resistance property is not intended to be coupled with intentional nonce-reuse; rather, such schemes provide the best possible security in the event of nonce reuse. Due to all of the above, it is RECOMMENDED that AES-GCM-SIV nonces be randomly generated.</t>
+      <t>We stress that nonce misuse-resistant schemes guarantee that if a
+      nonce repeats, then the only security loss is that identical plaintexts
+      will produce identical ciphertexts. Since this can also be a concern (as
+      the fact that the same plaintext has been encrypted twice is revealed),
+      we do not recommend using a fixed nonce as a policy. In addition, as we
+      show below, better-than-birthday bounds are achieved by AES-GCM-SIV when
+      the nonce repetition rate is low. Finally, as shown in <xref
+      target="BHT18"/>, there is a great security benefit in the
+      multiuser/multikey setting when each particular nonce is reused by a
+      small number of users only. We stress that the nonce misuse-resistance
+      property is not intended to be coupled with intentional nonce reuse;
+      rather, such schemes provide the best possible security in the event of
+      nonce reuse. Due to all of the above, it is RECOMMENDED that AES-GCM-SIV
+      nonces be randomly generated.</t>
 
-      <t>Some example usage bounds for AES-GCM-SIV are given below. The adversary's advantage is the "AdvEnc" from <xref target="key-derive"/> and is colloquially the ability of an attacker to distinguish ciphertexts from random bit-strings. The bounds below limit this advantage to 2^-32. For up to 256 uses of the same nonce and key (i.e., where one can assume that nonce misuse is no more than this bound), the following message limits should be respected (this assumes a short AAD, i.e. less than 64 bytes):</t>
+      <t>Some example usage bounds for AES-GCM-SIV are given below. The
+      adversary's advantage is the "AdvEnc" from <xref target="key-derive"/>
+      and is colloquially the ability of an attacker to distinguish
+      ciphertexts from random bit strings. The bounds below limit this
+      advantage to 2^-32. For up to 256 uses of the same nonce and key (i.e.,
+      where one can assume that nonce misuse is no more than this bound), the
+<!--[rfced] Is the correct expansion for AAD "additional authenticated data"?
+Please advise how best to expand in this sentence.
+
+Original:
+   For up to 256 uses of the same nonce and key (i.e., where one
+   can assume that nonce misuse is no more than this bound), the
+   following message limits should be respected (this assumes a short
+   AAD, i.e. less than 64 bytes):
+-->
+      following message limits should be respected (this assumes a short AAD,
+      i.e. less than 64 bytes):</t>
 
       <t><list>
-          <t>2^29 messages, where each plaintext is at most 1GiB</t>
-          <t>2^35 messages, where each plaintext is at most 128MiB</t>
-          <t>2^49 messages, where each plaintext is at most 1MiB</t>
-          <t>2^61 messages, where each plaintext is at most 16KiB</t>
+          <t>2^29 messages, where each plaintext is at most 1 GiB</t>
+          <t>2^35 messages, where each plaintext is at most 128 MiB</t>
+          <t>2^49 messages, where each plaintext is at most 1 MiB</t>
+          <t>2^61 messages, where each plaintext is at most 16 KiB</t>
       </list></t>
 
-      <t>Suzuki et al <xref target="multi-birthday"/> show that even if nonces are selected uniformly at random, the probability that one or more values would be repeated 256 or more times is negligible until the number of nonces reaches 2^102. (Specifically the probability is 1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.) Since 2^102 is vastly greater than the limit on the number of plaintexts per key given above, we don't feel that this limit on the number of repeated nonces will be a problem. This also means that selecting nonces at random is a safe practice with AES-GCM-SIV. The bounds obtained for random nonces are as follows (as above, for these bounds the adversary’s advantage is at most 2^-32):</t>
+      <t>Suzuki et al. <xref target="multi-birthday"/> show that even if
+      nonces are selected uniformly at random, the probability that one or
+      more values would be repeated 256 or more times is negligible until the
+      number of nonces reaches 2^102. (Specifically, the probability is
+      1/((2^96)^(255)) * Binomial(q, 256), where q is the number of nonces.)
+      Since 2^102 is vastly greater than the limit on the number of plaintexts
+      per key given above, we don't feel that this limit on the number of
+      repeated nonces will be a problem. This also means that selecting nonces
+      at random is a safe practice with AES-GCM-SIV. The bounds obtained for
+      random nonces are as follows (as above, for these bounds, the
+      adversary's advantage is at most 2^-32):</t>
 
       <t><list>
-          <t>2^32 messages, where each plaintext is at most 8GiB</t>
-          <t>2^48 messages, where each plaintext is at most 32MiB</t>
-          <t>2^64 messages, where each plaintext is at most 128KiB</t>
+          <t>2^32 messages, where each plaintext is at most 8 GiB</t>
+          <t>2^48 messages, where each plaintext is at most 32 MiB</t>
+          <t>2^64 messages, where each plaintext is at most 128 KiB</t>
       </list></t>
 
-      <t>For situations where, for some reason, an even higher number of nonce repeats is possible (e.g. in devices with very poor randomness), the message limits need to be reconsidered. Theorem 7 in <xref target="AES-GCM-SIV"/> contains more details but, for up to 1,024 repeats of each nonce, the limits would be (again assuming a short AAD, i.e. less than 64 bytes):</t>
+      <t>For situations where, for some reason, an even higher number of nonce
+      repeats is possible (e.g., in devices with very poor randomness), the
+      message limits need to be reconsidered. Theorem 7 in <xref
+      target="AES-GCM-SIV"/> contains more details, but for up to 1,024
+      repeats of each nonce, the limits would be (again assuming a short AAD,
+      i.e. less than 64 bytes):</t>
 
       <t><list>
-          <t>2^25 messages, where each plaintext is at most 1GiB</t>
-          <t>2^31 messages, where each plaintext is at most 128MiB</t>
-          <t>2^45 messages, where each plaintext is at most 1MiB</t>
-          <t>2^57 messages, where each plaintext is at most 16KiB</t>
+          <t>2^25 messages, where each plaintext is at most 1 GiB</t>
+          <t>2^31 messages, where each plaintext is at most 128 MiB</t>
+          <t>2^45 messages, where each plaintext is at most 1 MiB</t>
+          <t>2^57 messages, where each plaintext is at most 16 KiB</t>
       </list></t>
 
-      <t>In addition to calculating fresh AES keys for each nonce, these AEADs also calculate fresh POLYVAL keys. Previous versions of GCM-SIV did not do this and, instead, used part of the AEAD's key as the POLYVAL key. Bleichenbacher pointed out that this allowed an attacker who controlled the AEAD key to force the POLYVAL key to be zero. If a user of this AEAD authenticated messages with a secret additional-data value then this would be insecure as the attacker could calculate a valid authenticator without knowing the input. This does not violate the standard properties of an AEAD as the additional data is not assumed to be confidential. However, we want these AEADs to be robust to plausible misuse and also to be drop-in replacements for AES-GCM and so derive nonce-specific POLYVAL keys to avoid this issue.</t>
+      <t>In addition to calculating fresh AES keys for each nonce, these AEADs
+      also calculate fresh POLYVAL keys. Previous versions of GCM-SIV did not
+      do this and instead used part of the AEAD's key as the POLYVAL
+<!--[rfced] Should there be a citation and reference for Bleichenbacher as
+mentioned in this sentence? If so, please provide the reference information
+and let us know if it should be normative or informative reference.
 
-      <t>We also wish to note that the probability of successful forgery increases with the number of attempts that an attacker is permitted. The advantage defined in <xref target="key-derive"/> and used above is specified in terms of the ability of an attacker to distinguish ciphertexts from random bit-strings. It thus covers both confidentiality and integrity and theorem 6.2 in <xref target="key-derive"/> shows that the advantage increases with the number of decryption attempts. (Although much more slowly than with the number of encryptions; the dependence on the number of decryption queries for forgery is actually only linear, not quadratic. The latter is an artifact of the bound in the paper not being tight.) If an attacker is permitted extremely large numbers of attempts then the tiny probability that any given attempt succeeds may sum to a non-trivial chance.</t>
+Original:
+Bleichenbacher pointed out that this allowed an attacker who
+controlled the AEAD key to force the POLYVAL key to be zero.
 
-      <t>A security analysis of a similar scheme without nonce-based key derivation appears in <xref target="GCM-SIV"/> and a full analysis of the bounds when applying nonce-based key derivation appears in <xref target="key-derive"/>. A larger table of bounds and other information appears at <xref target="aes-gcm-siv-homepage"/>.</t>
+Perhaps the text is referring to this source (referenced by RFC 8446)?
+   [Blei98]   Bleichenbacher, D., "Chosen Ciphertext Attacks against
+              Protocols Based on RSA Encryption Standard PKCS #1",
+              Proceedings of CRYPTO '98, 1998.
+-->
+      key. Bleichenbacher pointed out that this allowed an attacker who
+      controlled the AEAD key to force the POLYVAL key to be zero. If a user
+      of this AEAD authenticated messages with a secret additional-data value,
+      then this would be insecure as the attacker could calculate a valid
+      authenticator without knowing the input. This does not violate the
+      standard properties of an AEAD as the additional data is not assumed to
+      be confidential. However, we want these AEADs to be robust against plausible
+      misuse and also to be drop-in replacements for AES-GCM and so derive
+      nonce-specific POLYVAL keys to avoid this issue.</t>
 
-      <t>The multi-user/multi-key security of AES-GCM-SIV was studied by <xref target="BHT18"/> who showed that security is almost like in the single user setting, as long as nonces do not repeat many times across many users. This is the case when nonces are chosen randomly.</t>
+      <t>We also wish to note that the probability of successful forgery
+      increases with the number of attempts that an attacker is permitted. The
+      advantage defined in <xref target="key-derive"/> and used above is
+      specified in terms of the ability of an attacker to distinguish
+      ciphertexts from random bit strings. It thus covers both confidentiality
+      and integrity, and Theorem 6.2 in <xref target="key-derive"/> shows that
+      the advantage increases with the number of decryption
+      attempts, although much more slowly than with
+      the number of encryptions; the dependence on the number of decryption
+      queries for forgery is actually only linear, not quadratic. The latter is an
+      artifact of the bound in the paper not being tight. If an attacker is
+      permitted extremely large numbers of attempts, then the tiny probability
+      that any given attempt succeeds may sum to a non-trivial chance.</t>
+
+      <t>A security analysis of a similar scheme without nonce-based key
+      derivation appears in <xref target="GCM-SIV"/>, and a full analysis of
+      the bounds when applying nonce-based key derivation appears in <xref
+      target="key-derive"/>. A larger table of bounds and other information
+      appears at <xref target="aes-gcm-siv-homepage"/>.</t>
+
+      <t>The multiuser/multikey security of AES-GCM-SIV was studied by <xref
+      target="BHT18"/>, which showed that security is almost the same as in
+      the single-user setting, as long as nonces do not repeat many times
+      across many
+      users. This is the case when nonces are chosen randomly.</t>
     </section>
 
     <section title="IANA Considerations">
-      <t>IANA is requested to add two entries to the registry of AEAD algorithms: AEAD_AES_128_GCM_SIV and AEAD_AES_256_GCM_SIV, both referencing this document as their specification.</t>
+      <t>IANA has added two entries to the "AEAD Algorithms" registry:
+      AEAD_AES_128_GCM_SIV (Numeric ID 30) and AEAD_AES_256_GCM_SIV (Numeric
+      ID 31), both referencing this document as their specification.</t>
     </section>
 
-    <section title="Acknowledgements">
-      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnacek, Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson, Scott Fluhrer, Tibor Jager, Bjoern Tackmann, Yannick Seurin, Tetsu Iwata and Deb Cooley's team at NSA Information Assurance for their helpful suggestions and review.</t>
-    </section>
   </middle>
 
   <back>
     <references title="Normative References">
       &RFC2119;
+      &RFC8174;
 
-      <reference anchor="SP800-38A" target="https://csrc.nist.gov/publications/detail/sp/800-38a/final">
+      <reference anchor="SP800-38A"
+		 target="https://csrc.nist.gov/publications/detail/sp/800-38a/final">
         <front>
           <title>
-            SP 800-38A: Recommendation for Block Cipher Modes of Operation: Methods and Techniques
+            Recommendation for Block Cipher Modes of Operation: Methods and Techniques
           </title>
           <author initials="M." surname="Dworkin" fullname="M. Dworkin">
             <organization/>
           </author>
           <date year="2001" month="December"/>
         </front>
-        <seriesInfo name="NIST" value="SP-800-38A"/>
+        <seriesInfo name="NIST SP" value="800-38A"/>
+	<seriesInfo name="DOI" value="10.6028/NIST.SP.800-38A"/>
       </reference>
     </references>
 
@@ -408,20 +703,22 @@ Counter |       Nonce                         Ciphertext
       <reference anchor="GCM" target="https://csrc.nist.gov/publications/detail/sp/800-38d/final">
         <front>
           <title>
-            Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC
+            Recommendation for Block Cipher Modes of Operation: Galois/Counter
+	    Mode (GCM) and GMAC
           </title>
           <author initials="M." surname="Dworkin" fullname="M. Dworkin">
             <organization/>
           </author>
           <date year="2007" month="November"/>
         </front>
-        <seriesInfo name="NIST" value="SP-800-38D"/>
+        <seriesInfo name="NIST SP" value="800-38D"/>
+<seriesInfo name="DOI" value="10.6028/NIST.SP.800-38D"/>
       </reference>
 
       <reference anchor="AES-GCM-SIV" target="https://eprint.iacr.org/2017/168">
         <front>
           <title>
-            AES-GCM-SIV: specification and analysis
+            AES-GCM-SIV: Specification and Analysis
           </title>
           <author initials="S." surname="Gueron" fullname="Shay Gueron">
             <organization/>
@@ -452,7 +749,8 @@ Counter |       Nonce                         Ciphertext
           </author>
           <date year="2018" month="May"/>
         </front>
-        <seriesInfo name="Proceedings of EUROCRYPT 2018" value=""/>
+        <seriesInfo name="Advances in Cryptology - EUROCRYPT" value="2018"/>
+<seriesInfo name="DOI" value="10.1007/978-3-319-78381-9_18"/>
       </reference>
 
       <reference anchor="GCM-SIV" target="http://doi.acm.org/10.1145/2810103.2813613">
@@ -466,9 +764,11 @@ Counter |       Nonce                         Ciphertext
           <author initials="Y." surname="Lindell" fullname="Yehuda Lindell">
             <organization/>
           </author>
-          <date year="2015"/>
+          <date month="October" year="2015"/>
         </front>
-        <seriesInfo name="Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security" value=""/>
+        <seriesInfo name="Proceedings of the 22nd ACM SIGSAC Conference on
+			  Computer and Communications" value="Security"/>
+<seriesInfo name="DOI" value="10.1145/2810103.2813613"/>
       </reference>
 
       <reference anchor="key-derive" target="https://doi.org/10.1145/3133956.3133992">
@@ -484,7 +784,9 @@ Counter |       Nonce                         Ciphertext
           </author>
           <date year="2017"/>
         </front>
-        <seriesInfo name="Proceedings of the 24th ACM SIGSAC Conference on Computer and Communications Security" value=""/>
+        <seriesInfo name="Proceedings of the 2017 ACM SIGSAC Conference on
+			  Computer and Communications" value="Security"/>
+<seriesInfo name="DOI" value="10.1145/3133956.3133992"/>
       </reference>
 
       <reference anchor="aes-gcm-siv-homepage" target="https://cyber.biu.ac.il/aes-gcm-siv/">
@@ -501,7 +803,7 @@ Counter |       Nonce                         Ciphertext
           <author initials="Y." surname="Lindell" fullname="Yehuda Lindell">
             <organization/>
           </author>
-          <date year="2017"/>
+          <date/>
         </front>
       </reference>
 
@@ -524,18 +826,31 @@ Counter |       Nonce                         Ciphertext
           </author>
           <date year="2006"/>
         </front>
-        <seriesInfo name="ICISC 2006: 9th International Conference, Busan, Korea, November 30 - December 1, 2006. Proceedings" value=""/>
+        <seriesInfo name="Information Security and Cryptology - ICISC 2006, Lecture Notes in Computer Science,"
+		    value="Volume 4296"/>
+<seriesInfo name="DOI" value="10.1007/11927587_5"/>
       </reference>
     </references>
 
-    <section anchor="ghash" title="The relationship between POLYVAL and GHASH">
+    <section anchor="ghash" title="The Relationship between POLYVAL and GHASH">
       <t>GHASH and POLYVAL both operate in GF(2^128), although with different irreducible polynomials: POLYVAL works modulo x^128 + x^127 + x^126 + x^121 + 1 and GHASH works modulo x^128 + x^7 + x^2 + x + 1. Note that these irreducible polynomials are the "reverse" of each other.</t>
 
-      <t>GHASH also has a different mapping between 128-bit strings and field elements. Where as POLYVAL takes the least-significant to most-significant bits of the first byte to be the coefficients of x^0 to x^7, GHASH takes them to be the coefficients of x^7 to x^0. This continues until, for the last byte, POLYVAL takes the least-significant to most-significant bits to be the coefficients of x^120 to x^127 while GHASH takes them to be the coefficients of x^127 to x^120.</t>
+      <t>GHASH also has a different mapping between 128-bit strings and field
+      elements. Whereas POLYVAL takes the least significant to
+      most significant bits of the first byte to be the coefficients of x^0 to
+      x^7, GHASH takes them to be the coefficients of x^7 to x^0. This
+      continues until, for the last byte, POLYVAL takes the least significant
+      to most significant bits to be the coefficients of x^120 to x^127, while
+      GHASH takes them to be the coefficients of x^127 to x^120.</t>
 
-      <t>The combination of these facts means that it's possible to "convert" values between the two by reversing the order of the bytes in a 16-byte string. The differing interpretations of bit order takes care of reversing the bits within each byte and then reversing the bytes does the rest. This may have a practical benefit for implementations that wish to implement both GHASH and POLYVAL.</t>
+      <t>The combination of these facts means that it's possible to "convert" values between the two by reversing the order of the bytes in a 16-byte string. The differing interpretations of bit order takes care of reversing the bits within each byte, and then reversing the bytes does the rest. This may have a practical benefit for implementations that wish to implement both GHASH and POLYVAL.</t>
 
-      <t>In order to be clear which field a given operation is performed in, let mulX_GHASH be a function that takes a 16-byte string, converts it to an element of GHASH's field using GHASH's convention, multiplies it by x and converts back to a string. Likewise, let mulX_POLYVAL be a function that converts a 16-byte string to an element of POLYVAL's field using POLYVAL's convention, multiplies it by x and converts back.</t>
+      <t>In order to be clear which field a given operation is performed in,
+      let mulX_GHASH be a function that takes a 16-byte string, converts it to
+      an element of GHASH's field using GHASH's convention, multiplies it by x,
+      and converts it back to a string. Likewise, let mulX_POLYVAL be a function
+      that converts a 16-byte string to an element of POLYVAL's field using
+      POLYVAL's convention, multiplies it by x, and converts it back.</t>
 
       <t>Given the 16-byte string 01000000000000000000000000000000, mulX_GHASH of that string is 00800000000000000000000000000000 and mulX_POLYVAL of that string is 02000000000000000000000000000000. As a more general example, given 9c98c04df9387ded828175a92ba652d8, mulX_GHASH of that string is 4e4c6026fc9c3ef6c140bad495d3296c and mulX_POLYVAL of it is 3931819bf271fada0503eb52574ca5f2.</t>
 
@@ -547,26 +862,64 @@ Counter |       Nonce                         Ciphertext
 
       <t>GHASH(H, X_1, ..., X_n) = ByteReverse(POLYVAL(mulX_POLYVAL(ByteReverse(H)), ByteReverse(X_1), ..., ByteReverse(X_n)))</t>
 
-      <t>As a worked example, let H = 25629347589242761d31f826ba4b757b, X_1 = 4f4f95668c83dfb6401762bb2d01a262 and X_2 = d1a24ddd2721d006bbe45f20d3c9f362. POLYVAL(H, X_1, X_2) = f7a3b47b846119fae5b7866cf5e5b77e. If we wished to calculate this given only an implementation of GHASH then the key for GHASH would be mulX_GHASH(ByteReverse(H)) = dcbaa5dd137c188ebb21492c23c9b112. Then ByteReverse(GHASH(dcba..., ByteReverse(X_1), ByteReverse(X_2))) = f7a3b47b846119fae5b7866cf5e5b77e, as required.</t>
+<figure><artwork>
+As a worked example: 
+   let H = 25629347589242761d31f826ba4b757b, 
+       X_1 = 4f4f95668c83dfb6401762bb2d01a262, and 
+       X_2 = d1a24ddd2721d006bbe45f20d3c9f362. 
+   POLYVAL(H, X_1, X_2) = f7a3b47b846119fae5b7866cf5e5b77e. 
+</artwork></figure>
+<t>
+If we wished to calculate this given only an implementation of GHASH, then the
+key for GHASH would be 
+</t>
 
-      <t>In the other direction, GHASH(H, X_1, X_2) = bd9b3997046731fb96251b91f9c99d7a. If we wished to calculate this given only an implementation of POLYVAL then we would first calculate the key for POLYVAL, mulX_POLYVAL(ByteReverse(H)), which is f6ea96744df0633aec8424b18e26c54a. Then ByteReverse(POLYVAL(f6ea..., ByteReverse(X_1), ByteReverse(X_2))) = bd9b3997046731fb96251b91f9c99d7a.</t>
+<figure><artwork>
+mulX_GHASH(ByteReverse(H)) = dcbaa5dd137c188ebb21492c23c9b112. 
+
+Then ByteReverse(GHASH(dcba..., ByteReverse(X_1), ByteReverse(X_2))) 
+     = f7a3b47b846119fae5b7866cf5e5b77e, as required.
+</artwork></figure>
+
+      <t>In the other direction, GHASH(H, X_1, X_2) =
+      bd9b3997046731fb96251b91f9c99d7a. If we wished to calculate this given
+      only an implementation of POLYVAL, then we would first calculate the key
+      for POLYVAL: </t>
+
+<figure><artwork>
+mulX_POLYVAL(ByteReverse(H)) = f6ea96744df0633aec8424b18e26c54a.
+
+Then ByteReverse(POLYVAL(f6ea..., ByteReverse(X_1), ByteReverse(X_2)))
+     = bd9b3997046731fb96251b91f9c99d7a.
+</artwork></figure>
     </section>
 
-    <section anchor="aesgcm" title="Additional comparisons with AES-GCM">
-      <t>Some functional properties also differ between AES-GCM and AES-GCM-SIV that are worth noting:</t>
+    <section anchor="aesgcm" title="Additional Comparisons with AES-GCM">
+      <t>Some functional properties that differ between AES-GCM and
+      AES-GCM-SIV that are also worth noting:</t>
 
-      <t>AES-GCM allows plaintexts to be encrypted in a streaming fashion, i.e. the beginning of the plaintext can be encrypted and transmitted before the entire message has been processed. AES-GCM-SIV requires two passes for encryption and so cannot do this.</t>
+      <t>AES-GCM allows plaintexts to be encrypted in a streaming fashion -- i.e., the beginning of the plaintext can be encrypted and transmitted before the entire message has been processed. AES-GCM-SIV requires two passes for encryption and so cannot do this.</t>
 
       <t>AES-GCM allows a constant additional-data input to be precomputed in order to save per-message computation. AES-GCM-SIV varies the authenticator key based on the nonce and so does not permit this.</t>
 
-      <t>The performance for AES-GCM vs AES-GCM-SIV on small machines can be roughly characterised by the number of AES operations and the number of GF(2^128) multiplications needed to process a message. Let a = (bytelen(additional-data) + 15) / 16 and p = (bytelen(plaintext) + 15) / 16. Then AES-GCM requires p + 1 AES operations and p + a + 1 field multiplications.</t>
+      <t>The performance for AES-GCM vs. AES-GCM-SIV on small machines can be
+      roughly characterized by the number of AES operations and the number of
+      GF(2^128) multiplications needed to process a message.</t>
+<figure><artwork>
+   Let a = (bytelen(additional-data) + 15) / 16 and 
+       p = (bytelen(plaintext) + 15) / 16. 
+</artwork></figure>
+<t>
+   Then AES-GCM requires p + 1 AES operations and p + a + 1 field
+   multiplications.
+</t>
 
-      <t>Defined similarly, AES-GCM-SIV with AES-128 requires p + 5 AES operations and p + a + 1 field multiplications. With AES-256 that becomes p + 7 AES operations.</t>
+      <t>Defined similarly, AES-GCM-SIV with AES-128 requires p + 5 AES operations and p + a + 1 field multiplications. With AES-256, that becomes p + 7 AES operations.</t>
 
-      <t>With large machines, the available parallelism becomes far more important and such simple performance analysis is no longer representative. For such machines, we find that decryption of AES-GCM-SIV is only about 5% slower then AES-GCM, as long as the message is at least a couple of kilobytes. Encryption tends to run about two-thirds the speed because of the additional pass required.</t>
+      <t>With large machines, the available parallelism becomes far more important, and such simple performance analysis is no longer representative. For such machines, we find that decryption of AES-GCM-SIV is only about 5% slower than AES-GCM, as long as the message is at least a couple of kilobytes. Encryption tends to run about two-thirds the speed because of the additional pass required.</t>
     </section>
 
-    <section title="Test vectors">
+    <section title="Test Vectors">
       <section title="AEAD_AES_128_GCM_SIV">
         <figure align="center">
           <artwork align="left"><![CDATA[
@@ -1585,7 +1938,7 @@ Result (37 bytes) =         626660c26ea6612fb17ad91e8e767639
 ]]></artwork>
         </figure>
       </section>
-      <section title="Counter wrap tests">
+      <section title="Counter Wrap Tests">
         <t>The tests in this section use AEAD_AES_256_GCM_SIV and are crafted to test correct wrapping of the block counter.</t>
         <figure align="center">
           <artwork align="left"><![CDATA[
@@ -1635,5 +1988,14 @@ Result (40 bytes) =         18ce4f0b8cb4d0cac65fea8f79257b20
         </figure>
       </section>
     </section>
+
+    <section title="Acknowledgements" numbered="no">
+      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnacek,
+      Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson,
+      Scott Fluhrer, Tibor Jager, Bjoern Tackmann, Yannick Seurin, Tetsu
+      Iwata, and Deb Cooley's team at NSA Information Assurance for their
+      helpful suggestions and review.</t>
+    </section>
+
   </back>
 </rfc>
