@@ -22,15 +22,7 @@
     <title abbrev="AES-GCM-SIV">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
     <author fullname="Shay Gueron" initials="S." surname="Gueron">
-
-<!-- [rfced] Shay, we suggest using a shortened form of your organization
-names in the first-page header, so that it fits horizontally. Please let us
-know if "University of Haifa and AWS" as it appears in the edited document is
-acceptable or if you prefer otherwise.  (Note: the full organization names
-still appear in the Authors' Addresses.)
--->
-
-      <organization abbrev="University of Haifa and AWS">University of Haifa and Amazon Web Services</organization>
+      <organization abbrev="University of Haifa & AWS">University of Haifa &amp; Amazon Web Services</organization>
       <address>
         <postal>
           <street>Abba Khoushy Ave 199</street>
@@ -57,7 +49,7 @@ still appear in the Authors' Addresses.)
     </author>
 
     <author fullname="Yehuda Lindell" initials="Y." surname="Lindell">
-      <organization>Bar Ilan University</organization>
+      <organization>Bar-Ilan University and Unbound Tech</organization>
       <address>
         <postal>
           <street>Ramat Gan</street>
@@ -79,20 +71,11 @@ still appear in the Authors' Addresses.)
     <keyword>siv</keyword>
 
     <abstract>
-<!--[rfced] Per Section 2.1 of RFC 5743, please add a statement in the
-abstract identifying the document as the product of the Research Group.
--->
-
-<!--[rfced] In addition, Section 2.1 of RFC 5743 states:
-"The breadth of review the document has received must also be
-noted.  For example, was this document read by all the active
-research group members, only three people, or folks who are not
-"in" the RG but are expert in the area?"
-Please let us know what text should be added.
--->
       <t>This memo specifies two authenticated encryption algorithms that are
       nonce misuse resistant -- that is, they do not fail catastrophically
       if a nonce is repeated.</t>
+
+      <t>This document is the product of the Crypto Forum Research Group.</t>
     </abstract>
   </front>
 
@@ -128,6 +111,8 @@ Please let us know what text should be added.
       as when multiple encryptors use the same key. As discussed in <xref
       target="seccon"></xref>, it is RECOMMENDED to use this scheme with
       randomly chosen nonces.</t>
+
+      <t>This document represents the consensus of the Crypto Forum Research Group (CFRG).</t>
     </section>
 
     <section title="Requirements Language">
@@ -292,10 +277,10 @@ func encrypt(key_generating_key,
              nonce,
              plaintext,
              additional_data) {
-  if bytelen(plaintext) > 2**36 {
+  if bytelen(plaintext) > 2^36 {
     fail()
   }
-  if bytelen(additional_data) > 2**36 {
+  if bytelen(additional_data) > 2^36 {
     fail()
   }
 
@@ -335,12 +320,6 @@ func encrypt(key_generating_key,
 
       <t>To decrypt an AES-GCM-SIV ciphertext, first derive the message-encryption and message-authentication keys in the same manner as when encrypting.</t>
 
-
-<!--[rfced] It appears that this document uses both "**" and "^"
-to indicate exponentiation. For example: 2^36 and 2**36.
-Please let us know if changes are needed to make the notation 
-consistent, or if this is an intentional distinction.
--->
       <t>If the ciphertext is less than 16 bytes or more than 2^36 + 16 bytes,
       then fail. Otherwise, split the input into the encrypted plaintext and a
       16-byte tag. Decrypt the encrypted plaintext with the message-encryption
@@ -373,10 +352,10 @@ func decrypt(key_generating_key,
              nonce,
              ciphertext,
              additional_data) {
-  if bytelen(ciphertext) < 16 || bytelen(ciphertext) > 2**36 + 16 {
+  if bytelen(ciphertext) < 16 || bytelen(ciphertext) > 2^36 + 16 {
     fail()
   }
-  if bytelen(additional_data) > 2**36 {
+  if bytelen(additional_data) > 2^36 {
     fail()
   }
 
@@ -516,7 +495,7 @@ Counter |       Nonce                         Ciphertext
       thus, if an implementation released some or all of the plaintext before
       authenticating it, other parts of a system may process malicious data as
       if it were authentic. AES-GCM might be less likely to lead
-      implementations to do this, because there the ciphertext is generally
+      implementations to do this because there the ciphertext is generally
       authenticated before, or concurrently with, the plaintext
       calculation. Therefore, this text requires that implementations MUST NOT
       release unauthenticated plaintext. Thus, system designers should consider
@@ -1990,11 +1969,7 @@ Result (40 bytes) =         18ce4f0b8cb4d0cac65fea8f79257b20
     </section>
 
     <section title="Acknowledgements" numbered="no">
-      <t>The authors would like to thank Uri Blumenthal, Ondrej Mosnacek,
-      Daniel Bleichenbacher, Kenny Paterson, Bart Preneel, John Mattsson,
-      Scott Fluhrer, Tibor Jager, Bjoern Tackmann, Yannick Seurin, Tetsu
-      Iwata, and Deb Cooley's team at NSA Information Assurance for their
-      helpful suggestions and review.</t>
+      <t>The authors would like to thank Daniel Bleichenbacher, Uri Blumenthal, Deb Cooley's team at NSA Information Assurance, Scott Fluhrer, Tetsu Iwata, Tibor Jager, John Mattsson, Ondrej Mosnacek, Kenny Paterson, Bart Preneel, Yannick Seurin, and Bjoern Tackmann for their helpful suggestions and review.</t>
     </section>
 
   </back>
