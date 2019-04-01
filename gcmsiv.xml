@@ -22,7 +22,7 @@
     <title abbrev="AES-GCM-SIV">AES-GCM-SIV: Nonce Misuse-Resistant Authenticated Encryption</title>
 
     <author fullname="Shay Gueron" initials="S." surname="Gueron">
-      <organization abbrev="University of Haifa & AWS">University of Haifa &amp; Amazon Web Services</organization>
+      <organization abbrev="University of Haifa & AWS">University of Haifa and Amazon</organization>
       <address>
         <postal>
           <street>Abba Khoushy Ave 199</street>
