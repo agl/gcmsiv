@@ -595,20 +595,7 @@ Original:
       <t>In addition to calculating fresh AES keys for each nonce, these AEADs
       also calculate fresh POLYVAL keys. Previous versions of GCM-SIV did not
       do this and instead used part of the AEAD's key as the POLYVAL
-<!--[rfced] Should there be a citation and reference for Bleichenbacher as
-mentioned in this sentence? If so, please provide the reference information
-and let us know if it should be normative or informative reference.
-
-Original:
-Bleichenbacher pointed out that this allowed an attacker who
-controlled the AEAD key to force the POLYVAL key to be zero.
-
-Perhaps the text is referring to this source (referenced by RFC 8446)?
-   [Blei98]   Bleichenbacher, D., "Chosen Ciphertext Attacks against
-              Protocols Based on RSA Encryption Standard PKCS #1",
-              Proceedings of CRYPTO '98, 1998.
--->
-      key. Bleichenbacher pointed out that this allowed an attacker who
+      key. Bleichenbacher pointed out <xref target="Bleichenbacher16"/> that this allowed an attacker who
       controlled the AEAD key to force the POLYVAL key to be zero. If a user
       of this AEAD authenticated messages with a secret additional-data value,
       then this would be insecure as the attacker could calculate a valid
@@ -808,6 +795,15 @@ Perhaps the text is referring to this source (referenced by RFC 8446)?
         <seriesInfo name="Information Security and Cryptology - ICISC 2006, Lecture Notes in Computer Science,"
 		    value="Volume 4296"/>
 <seriesInfo name="DOI" value="10.1007/11927587_5"/>
+      </reference>
+
+      <reference anchor="Bleichenbacher16" target="https://mailarchive.ietf.org/arch/msg/cfrg/qgh-Yxmj7CC7cq2YZLpmfGA3x-o">
+        <front>
+          <title>Subject: AES-GCM-SIV security of the additional data</title>
+          <author initials="D" surname="Bleichenbacher" />
+          <date month="24 June" year="2016" />
+        </front>
+        <seriesInfo name="message to the" value="cfrg mailing list"/>
       </reference>
     </references>
 
